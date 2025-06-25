@@ -1,6 +1,6 @@
 This repo contains code and writing for the LIR project. 
 
-# Overview of Local Inconsistency Resolution (LIR)
+# Overview of LIR
 
 _Local Inconsistency Resolution (LIR)_ is a generic recipe that can be used to derive many algorithms in machine learning. At a high level, the idea is very simple: restrict your attention to a small part of your relevant beliefs, calculate their inconsistency in context, and then resolve that inconsistency by changning each parameter in proportion to the control you have in it. For a more detailed mathematical picture, check out the [most recent draft of the paper]() in the`TeX/` folder.
 
