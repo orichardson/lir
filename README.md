@@ -55,6 +55,7 @@ If you see a detached head, run `git submodule update --remote`; the project con
 Update this section to index your work!
 
  * `code/inc-grad.py` --- a prototype for taking gradients for inconsistency. 
+ See [inconsistency-gradient.md](inconsistency-gradient.md) for details of this important preliminary step of the project.
 
 In general: prototypes and general functions that might ideally be integrated into the pdg repository start in `/code`. Once they are stable, we can merge them into the `pdg` submodule. Experiments and applications should go in their appropriate sub-folders. 
 
