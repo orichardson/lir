@@ -30,8 +30,8 @@ code/
 ```
 
 Fragments of math can be found in the `TeX` folder.
-Code that aims to test or apply LIR lives in `expts/`.
-The folder `/pdg/' is a git submodule that points to the main [PDG repository](https://github.com/orichardson/pdg). 
+Code that aims to test or apply LIR lives in `code/expts/`.  
+The folder `code/pdg/` is a git submodule that points to the main [PDG repository](https://github.com/orichardson/pdg). 
 Submodules can sometimes be confusing; what you need to know is summarized below. 
 
 ## Submodules 
