@@ -50,12 +50,12 @@ The most common problem is that is easy to get the submodule into a state that r
 If you see a detached head, run `git submodule update --remote`; the project configuration should re-attach the head.
 
 
-## The Files of Interest
+## Index of Important Files (i.e., where to start)
 
 Update this section to index your work!
 
- * `code/inc-grad.py` --- a prototype for taking gradients for inconsistency. 
- See [inconsistency-gradient.md](inconsistency-gradient.md) for details of this important preliminary step of the project.
+ * `code/inc-grad.py` --- a suggestion for where to prototype code for taking inconsistency gradients.  
+ See [issue #1](https://github.com/orichardson/lir/issues/1) for details of this important preliminary step of the project.
 
 In general: prototypes and general functions that might ideally be integrated into the pdg repository start in `/code`. Once they are stable, we can merge them into the `pdg` submodule. Experiments and applications should go in their appropriate sub-folders. 
 
