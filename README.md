@@ -38,8 +38,15 @@ Submodules can sometimes be confusing; what you need to know is summarized below
 
 The node `pdg/` in this repository is actually [git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules); think of it a pointer to the `/lir` branch of the (distinct) [`pdg` repository](https://github.com/orichardson/pdg). 
 
-* To start: either clone the repository using `git clone --recurse-submodules git@github.com:orichardson/lir.git` or run `git submodule update --init` after cloning, to integrate the files from the pdg repository to your local filesystem.  
-* To update (pull) the submodules: `git submodule update --remote`.  
+* To start: either clone the repository using
+  ```
+  git clone --recurse-submodules git@github.com:orichardson/lir.git
+  ```
+  or run `git submodule update --init` after cloning, to integrate the files from the pdg repository to your local filesystem.  
+* To update (pull) the submodules:
+  ```
+  git submodule update --remote
+  ```
   To update both this repo and the submodlue, `git pull --recurse-submodules`.
 * To push your work on the submodule, commit and push as usual from within the submodule `pdg`. If the change touches anything important and has the possibility of breaking things, do this on a new branch and open a pull request for review. Finally: from this outer repository, run `git add pdg` and commit/push as usual. 
 
@@ -54,7 +61,7 @@ If you see a detached head, run `git submodule update --remote`; the project con
 
 Update this section to index your work!
 
- * `code/inc-grad.py` --- a suggestion for where to prototype code for taking inconsistency gradients.  
+ * [`code/inc-grad.py`](/code/inc-grad.py) --- a suggestion for where to prototype code for taking inconsistency gradients.  
  See [issue #1](https://github.com/orichardson/lir/issues/1) for details of this important preliminary step of the project.
 
 In general: prototypes and general functions that might ideally be integrated into the pdg repository start in `/code`. Once they are stable, we can merge them into the `pdg` submodule. Experiments and applications should go in their appropriate sub-folders. 
