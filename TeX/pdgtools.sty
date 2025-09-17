@@ -1,0 +1,176 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{pdgtools}[2024/11/08 PDG Latex Symbols and Tools]
+%%%%% VERSION 4.0 %%%%%%%%%%%%%
+\newif\iflongsrctgt\longsrctgtfalse
+\DeclareOption{SrcTgt}{\longsrctgttrue}
+\ProcessOptions\relax
+
+\RequirePackage{mathtools,amssymb}
+\RequirePackage{tikz}
+
+\relax% Require tikz
+	\usetikzlibrary{positioning,fit,calc, decorations, arrows, shapes, shapes.geometric}
+	\usetikzlibrary{cd}
+	% \usetikzlibrary{patterns,backgrounds}
+
+	%%%%%%%%%%%%
+	\tikzset{AmpRep/.style={ampersand replacement=\&}}
+	\tikzset{center base/.style={baseline={([yshift=-.8ex]current bounding box.center)}}}
+
+	%%% Node Stylings
+	\tikzset{dpadded/.style={rounded corners=5, inner sep=0.7em, draw, outer sep=0.3em, fill={black!50}, fill opacity=0.08, text opacity=1}}
+	\tikzset{dpad1/.style={outer sep=0.1em, inner sep=0.4em, draw=gray!50, rounded corners=2, fill=black!08, fill opacity=1, align=center}}
+	\tikzset{dpad0/.style={outer sep=0.05em, inner sep=0.3em, draw=gray!75, rounded corners=4, fill=black!08, fill opacity=1, align=center}}
+	\tikzset{dpadinline/.style={outer sep=0.05em, inner sep=2.5pt, rounded corners=2.5pt, draw=gray!75, fill=black!08, fill opacity=1, align=center, font=\small}}
+
+ 	\tikzset{dpad/.style args={#1}{every matrix/.append style={nodes={dpadded, #1}}}}
+	\tikzset{light pad/.style={outer sep=0.2em, inner sep=0.5em, draw=gray!50}}
+	
+	%%% subnode stylings
+	\tikzset{alternative/.style args={#1|#2|#3}{name=#1, circle, fill, inner sep=1pt,label={[name={lab-#1},gray!30!black]#3:\scriptsize #2}} }
+
+	\tikzset{bpt/.style args={#1|#2}{alternative={#1|#2|above}} }
+	\tikzset{tpt/.style args={#1|#2}{alternative={#1|#2|below}} }
+	\tikzset{lpt/.style args={#1|#2}{alternative={#1|#2|left}} }
+	\tikzset{rpt/.style args={#1|#2}{alternative={#1|#2|right}} }
+	\tikzset{pt/.style args={#1}{alternative={#1|#1|above}} }
+	\tikzset{mpt/.style args={#1|#2}{name=#1, circle, fill, inner sep=1pt,label={[name={lab-#1},gray]\scriptsize #2}} }
+
+	%% from AISTATS paper
+	\tikzset{Dom/.style args={#1[#2] (#3) around #4}{dpadded, name=#3, label={[name={lab-#3},align=center,label distance=-1.9em, shading = axis, top color=white, bottom color=black!04, #2]120:#1}, fit={ #4 }, inner sep=0.5em}}
+	% \tikzset{Dom/.style args={#1 (#2) around #3}{dpadded, name=#2, label={[name={lab-#2},align=center] #1}, fit={ #3 } }}
+	\tikzset{bDom/.style args={#1 (#2) around #3}{dpadded, name=#2, label={[name={lab-#2},align=center]below:#1}, fit={ #3 } }}
+	\newcommand\lab[1]{(#1)(lab-#1)}
+
+
+	%%% arc stylings
+	\tikzset{arr/.style={draw, ->, thick, shorten <=3pt, shorten >=3pt}}
+	\tikzset{arr0/.style={draw, ->, thick, shorten <=0pt, shorten >=0pt}}
+	\tikzset{arr1/.style={draw, ->, thick, shorten <=1pt, shorten >=1pt}}
+	\tikzset{arr2/.style={draw, ->, thick, shorten <=2pt, shorten >=2pt}}
+
+	\newcommand\cmergearr[5][]{
+		\draw[arr, #1, -] (#2) -- (#5) -- (#3);
+		\draw[arr, #1, shorten <=0] (#5) -- (#4);
+		}
+	\newcommand\mergearr[4][]{
+		\coordinate (center-#2#3#4) at (barycentric cs:#2=1,#3=1,#4=1.2);
+		\cmergearr[#1]{#2}{#3}{#4}{center-#2#3#4}
+		}
+	\newcommand\cunmergearr[5][]{
+		\draw[arr, #1, -, shorten >=0] (#2) -- (#5);
+		\draw[arr, #1, shorten <=0] (#5) -- (#3);
+		\draw[arr, #1, shorten <=0] (#5) -- (#4);
+		}
+	\newcommand\unmergearr[4][]{
+		\coordinate (center-#2#3#4) at (barycentric cs:#2=1.2,#3=1,#4=1);
+		\cunmergearr[#1]{#2}{#3}{#4}{center-#2#3#4}
+		}
+
+
+\relax %% Double delimeters; I need this for pdg macros \aar and \bbr
+    \newcommand{\nhphantom}[2]{\sbox0{\kern-2%
+    \nulldelimiterspace$\left.\delimsize#1\vphantom{#2}\right.$}\hspace{-.97\wd0}}
+
+    \makeatletter
+    \newsavebox{\abcmycontentbox}
+    \newcommand\DeclareDoubleDelim[5]{
+    \DeclarePairedDelimiterXPP{#1}[1]%
+        {% box must be saved in this pre code
+            \sbox{\abcmycontentbox}{\ensuremath{##1}}%
+        }{#2}{#5}{}%
+        {%
+            \nhphantom{#3}{\usebox\abcmycontentbox}%
+            \hspace{1.2pt} \delimsize#3%
+            \mathopen{}\usebox{\abcmycontentbox}\mathclose{}%
+            \delimsize#4\hspace{1.2pt}%
+            \nhphantom{#4}{\usebox\abcmycontentbox}%
+        }%
+    }
+    \makeatother
+
+%ensure we have dutchcal...
+\DeclareMathAlphabet{\mathdcal}{U}{dutchcal}{m}{n}
+\DeclareMathAlphabet{\mathbdcal}{U}{dutchcal}{b}{n}
+
+\relax %%%%%%%%%   PDG  MACROS   %%%%%%%%
+	\newcommand{\X}{\mathcal X}
+	% \newcommand{\V}{\mathcal V}
+	\newcommand{\V}{\mathdcal V}
+	\newcommand{\N}{\mathcal N}
+	\newcommand{\Ar}{\mathcal A}
+	\newcommand{\Ed}{\mathcal E}
+
+    \newcommand{\balpha}{\boldsymbol\alpha}
+    \newcommand{\bbeta}{\boldsymbol\beta}
+	\newcommand{\ssub}[1]{_{\!_{#1}\!}}
+
+	\def\p_#1{\mathbb P_{\!#1\mskip-2mu}}
+	
+	\newcommand{\dg}[1]{\mathbdcal{#1}}
+	% \newcommand{\var}[1]{\mathsf{#1}}
+	\newcommand{\var}[1]{{#1}}
+	
+	%%%%% a clever version of \Src,\Tgt, and \p that supresses subscripts
+	\newif\ifsuba \subatrue
+	\let\psimp\p  % \let\simpSrc\Src   \let\simpTgt\Tgt
+	\iflongsrctgt
+	\def\SrcSymbol{S\mskip-2mu\mathit{r\mskip-3muc}}
+	\def\TgtSymbol{T\mskip-5mu\mathit{g\mskip-2mut}}
+	\newcommand\Src[1]{\SrcSymbol\ifsuba\,{#1}\fi}
+	\newcommand\Tgt[1]{\TgtSymbol\ifsuba\,{#1}\fi}
+	\else
+	\def\SrcSymbol{S}
+	\def\TgtSymbol{T}
+	\newcommand\Src[1]{\SrcSymbol\ifsuba\mskip-2mu\vphantom{|}_{{#1}}\fi}
+	\newcommand\Tgt[1]{\TgtSymbol\ifsuba\mskip-3mu\vphantom{|}_{{#1}}\fi}
+	\fi
+	\newcommand{\PDGof}[1]{{\dg M}_{#1}}
+	\newcommand{\UPDGof}[1]{{\dg N}_{#1}}
+	
+	% Special Variables
+	\newcommand{\pdgunit}{\mathrlap{\mathit 1} \mspace{2.3mu}\mathit 1}
+	\newcommand\Tru{{\tt T}}
+		\newcommand\trut{{\tt t}}
+		\newcommand\truf{{\tt f}}
+	
+	% \newcommand{\PDGof}[1]{{\mathbdcal{p\kern-0.05em d\kern-0.125em g}} (#1)}
+	% \newcommand{\UPDGof}[1]{{\mathbdcal{u\kern-0.05em p\kern-0.05em d\kern-0.125em g}} ({#1})}
+	\newcommand\Inc{\mathit{Inc}}
+	\newcommand\OInc{\mathit{O\mskip-2.5muI\mskip-3.5mun\mskip-1.7muc}} % new version of Inc
+	% Variants of the second term's name....
+	% \newcommand{\IDef}[1]{\mathit{IDef}_{\!#1}}
+	\newcommand{\IDef}{\mathit{I\mskip-3.0muD\mskip-2.5mue\mskip-1.5muf}}
+	\newcommand\SDef{\mathit{S\mskip-3.5muD\mskip-2.5mue\mskip-1.5muf}} % structural dif?
+	\newcommand\SDiff{\mathit{S\mskip-3.5muD\mskip-2.5mui\mskip-1.5muff}} % the new IDef?
+	\newcommand\SInc{\mathit{S\mskip-2.5muI\mskip-3.5mun\mskip-1.7muc}} % the new IDef? 
+	
+	\newcommand{\SIMInc}{\mathrm{\SQIM}\mathit{\mskip-2.5muI\mskip-3.5mun\mskip-1.7muc}} 
+	% \newcommand{\ed}[3]{%
+	% 	\mathchoice%
+	% 	{#2\overset{\smash{\mskip-5mu\raisebox{-3pt}{${#1}$}}}{\xrightarrow{\hphantom{\scriptstyle {#1}}}} #3} %display style
+	% 	{#2\overset{\smash{\mskip-5mu\raisebox{-3pt}{$\scriptstyle {#1}$}}}{\xrightarrow{\hphantom{\scriptstyle {#1}}}} #3}% text style
+	% 	{#2\overset{\smash{\mskip-5mu\raisebox{-3pt}{$\scriptscriptstyle {#1}$}}}{\xrightarrow{\hphantom{\scriptscriptstyle {#1}}}} #3} %script style
+	% 	{#2\overset{\smash{\mskip-5mu\raisebox{-3pt}{$\scriptscriptstyle {#1}$}}}{\xrightarrow{\hphantom{\scriptscriptstyle {#1}}}} #3}} %scriptscriptstyle
+	\newcommand{\ed}[3]{#2%
+	 {\overset{\smash{\mskip-5mu\raisebox{-1pt}{$\scriptscriptstyle
+	        #1$}}}{\rightarrow}} #3}
+
+	\newcommand{\bundle}{\mathbin{+}}
+		
+	\DeclareDoubleDelim
+		\SD\{\{\}\}
+	\DeclareDoubleDelim
+		\bbr[[]]
+	% \DeclareDoubleDelim
+	% 	\aar\langle\langle\rangle\rangle
+	\makeatletter
+	\newsavebox{\aar@content}
+	\newcommand\aar{\@ifstar\aar@one@star\aar@plain}
+	\newcommand\aar@one@star{\@ifstar\aar@resize{\aar@plain*}}
+	\newcommand\aar@resize[1]{\sbox{\aar@content}{#1}\scaleleftright[3.8ex]
+		{\Biggl\langle\!\!\!\!\Biggl\langle}{\usebox{\aar@content}}
+		{\Biggr\rangle\!\!\!\!\Biggr\rangle}}
+	\DeclareDoubleDelim
+		\aar@plain\langle\langle\rangle\rangle
+	\makeatother

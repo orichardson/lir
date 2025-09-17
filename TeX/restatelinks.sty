@@ -1,0 +1,131 @@
+\ProvidesPackage{restatelinks}
+
+\newif\ifmarginprooflinks
+	\marginprooflinkstrue
+\newif\ifproofbox
+	\proofboxtrue
+
+\DeclareOption{strip}{\marginprooflinksfalse}
+\DeclareOption{nobox}{\proofboxfalse}
+\ProcessOptions\relax
+
+\RequirePackage{scalerel}
+\RequirePackage{hyperref}
+\RequirePackage{amsthm}
+\RequirePackage{thmtools}
+\RequirePackage{tcolorbox}
+% \RequirePackage{xstring} % for expandarg
+\RequirePackage{xpatch}
+
+\xpatchcmd{\thmt@restatable}% Edit \thmt@restatable
+   {\csname #2\@xa\endcsname\ifx\@nx#1\@nx\else[{#1}]\fi}% Replace this code
+   % {\ifthmt@thisistheone\csname #2\@xa\endcsname\typeout{oiii[#1;#2\@xa;#3;\csname thmt@stored@#3\endcsname]}\ifx\@nx#1\@nx\else[#1]\fi\else\csname #2\@xa\endcsname\fi}% with this code
+   {\ifthmt@thisistheone\csname #2\@xa\endcsname\ifx\@nx#1\@nx\else[{#1}]\fi
+   \else\fi}
+   {}{\typeout{FIRST PATCH TO THM RESTATE FAILED}} % execute on success/failure
+\xpatchcmd{\thmt@restatable}% A second edit to \thmt@restatable
+   {\csname end#2\endcsname}
+   {\ifthmt@thisistheone\csname end#2\endcsname\else\fi}
+   {}{\typeout{FAILED SECOND THMT RESTATE PATCH}}
+ 
+ % use this to switch between versions for main text and restatement
+ \newcommand\onlyfirsttime[2][]{\ifthmt@thisistheone#2\else#1\fi}
+
+% \def\onlyaftercolon#1:#2{#2}
+\newcommand{\recall}[1]{\medskip\par\noindent{\bf \Cref{thmt@@#1}.} \begingroup\em \noindent
+   \expandafter\csname#1\endcsname* \endgroup\par\smallskip}
+
+\setlength\marginparwidth{1.55cm}
+\newenvironment{linked}[3][]{%
+	\def\linkedproof{#3}%
+	\def\linkedtype{#2}%
+	% \reversemarginpar
+	% \marginpar{%
+	% \vspace{1.1em}
+	% % \hspace{2em}
+	% 	% \raggedleft
+	% 	\raggedright
+	% 	\hyperref[proof:\linkedproof]{%
+	% 	\color{blue!50!white}
+	% 	\scaleleftright{$\Big[$}{\,{\small\raggedleft\tt\begin{tabular}{@{}c@{}} proof of \\\linkedtype~\ref*{\linkedtype:\linkedproof}\end{tabular}}\,}{$\Big]$}}
+	% 	}%
+    % \restatable[#1]{#2}{#2:#3}\label{#2:#3}%
+	\ifmarginprooflinks
+	\marginpar{%
+		% \vspace{-3em}% %% for bottom
+		% \vspace{1.5em}
+		\vspace{3em} %% for double space
+		\centering%
+        \@ifundefined{r@proof:\linkedproof}{% no proof available
+            \color{red!50!gray!60!white}%
+    		\scaleleftright{$\Big($}{\,\mbox{\footnotesize\centering\tt\begin{tabular}{@{}c@{}}
+				\tiny
+    			% proof of \\\,\linkedtype~\ref*{\linkedtype:\linkedproof}
+    			% no\\[-0.15em]
+    			% proof
+                unproven!
+    		\end{tabular}}\,}{$\Big)$}~
+        }{% there is a link; insert link to proof
+		\hyperref[proof:\linkedproof]{%
+        % \hyperref[proof:#3]{
+		\color{blue!30!white}%
+		\scaleleftright{$\Big[$}{\,\mbox{%
+			\footnotesize\centering\tt%
+			% \renewcommand{\baselinestretch}{1.0}%
+			\begin{tabular}{@{}c@{}}
+			\tiny
+			% proof of \\\,\linkedtype~\ref*{\linkedtype:\linkedproof}
+			link to\\[-0.15em]
+			\tiny
+			proof
+		\end{tabular}}\,}{$\Big]$}}~
+		}}%
+	\fi
+    \restatable[#1]{#2}{#2:#3}\label{#2:#3}%
+    }%
+	{\endrestatable%
+	}
+
+	\newcounter{proofcntr}
+	% \newenvironment{lproof}{\begin{proof}\refstepcounter{proofcntr}}{\end{proof}}
+	\newenvironment{lproof}[1][Proof]{%
+        \renewcommand*{\proofname}{#1}
+        \begin{proof}\refstepcounter{proofcntr}}{\end{proof}}
+
+	\tcbuselibrary{most}
+	\ifproofbox
+	\tcolorboxenvironment{lproof}{
+		% fonttitle=\bfseries,
+		% top=0.5em,
+		enhanced,
+		parbox=false,
+		boxrule=0pt,
+		frame hidden,
+		borderline west={4pt}{0pt}{blue!20!black!40!white},
+		% coltext={blue!20!black!60!white},
+		% colback={blue!20!black!05!white},
+		colback={blue!20!black!02!white},
+		% colback={white},
+		sharp corners,
+		breakable,
+		% bottomsep at break=4cm,
+		% enlarge bottom at break by=-4cm,
+		% topsep at break=3cm,
+		% enlarge top at break by=-3cm
+	}
+	\fi
+	\usepackage[framemethod=TikZ]{mdframed}
+	% \surroundwithmdframed[ % lproof
+	% 	   topline=false,
+	% 	   linewidth=3pt,
+	% 	   linecolor=gray!20!white,
+	% 	   rightline=false,
+	% 	   bottomline=false,
+	% 	   leftmargin=0pt,
+	% 	   % innerleftmargin=5pt,
+	% 	   skipabove=\medskipamount,
+	% 	   skipbelow=\medskipamount
+	% 	]{lproof}
+%oli16: The extra space was because there was extra space in the paragraph, not
+%because this length was too big. By breaking arrays, everything will be better.
+\newcommand{\begthm}[3][]{\begin{#2}[{name=#1},restate=#3,label=#3]}
