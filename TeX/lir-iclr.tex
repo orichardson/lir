@@ -183,7 +183,7 @@ Montr\'{e}al, QC H3T 1J4 \\
 \newcommand{\new}{\marginpar{NEW}}
 
 
-\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+% \iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
 
 \begin{document}
 
@@ -2023,12 +2023,15 @@ The probabilistic dependency graph of a GFlowNet can be depicted as follows:
 
    % Double multi-arrow labeled Q! going to S0, S1, Sn
    \coordinate (A) at ($ (S0)!.5!(Sn) + (0,1.5)$);
-   \draw[arr2, -] (A) to node[left, inner sep=3pt]{$Q!$} ++(0,-0.35) -- (A);
+   \draw[arr2,-,shorten <=0pt,shorten >=0pt] (A) to node[left, inner sep=3pt]{$Q!$} ++(0,0.35);
    % \draw[arr2, ->>, bend right=20] (A) to node[left, inner sep=3pt]{} ++(0,-0.35) (S0);
-   \draw[arr2, ->, bend right=20] (A) -- ++(0,-0.35) to (S0);
-   \draw[arr2, ->, bend right=20] (A) -- ++(0,-0.35) to (S1);
-   \draw[arr2, ->, bend left=20] (A) -- ++(0,-0.35) to (dots);
-   \draw[arr2, ->, bend left=20] (A) -- ++(0,-0.35) to (Sn);
+   % \draw[arr2, ->, bend right=20] (A) -- ++(0,-0.35) to (S0);
+   % \draw[arr2, ->, bend right=20] (A) -- ++(0,-0.35) to (S1);
+   % \draw[arr2, ->, bend left=20] (A) -- ++(0,-0.35) to (dots);
+   % \draw[arr2, ->, bend left=20] (A) -- ++(0,-0.35) to (Sn);
+   \draw[arr2] (A) to[out=-90,in=90] (S0);
+   \draw[arr2] (A) to[out=-90,in=90] (S1);
+   \draw[arr2] (A) to[out=-90,in=90] (Sn);
 \end{tikzpicture}
 \]
 % \mehran{Actions are missing...}
@@ -2473,5 +2476,14 @@ for different adjacent pairs $(a, X)$ correspond to both the message passing sch
    proving the result.
 \end{lproof}
 
+
+\section{SCRATCH}
+
+\subsection{A Justification}
+The fact that one can describe many useful algorithms in a certain format is not, on its own, a very significant evidence of value. 
+After all, once we know that all of mathematics can be described by sets, 
+
+So we are trying to establish something deeper: that this is 
+ 
 
 \end{document}
