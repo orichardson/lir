@@ -13,7 +13,7 @@ from pdg.pdg import PDG
 from pdg.rv import Variable as Var
 from pdg.dist import RawJointDist as RJD
 from pdg.dist import CPT, ParamCPD
-from lir__simpler import lir_train_simple
+from lir__simpler import lir_train_simple, lir_train_simple_Attn_ctrl
 # from pdg.alg.torch_opt_lir import opt_joint  
 from pdg.alg.torch_opt import opt_joint  
 
@@ -168,7 +168,8 @@ def test_lir_on_random_pdg(num_vars=4, num_edges=4, gamma=1.0, seed=0, init="fro
     mu0 = opt_joint(pdg, gamma=gamma, iters=25, verbose=False)
 
     # ---- LIR outer loop (θ-updates only; μ is re-solved each step) ----
-    lir_train_simple(
+    ##lir_train_simple(
+    lir_train_simple_Attn_ctrl(
         M=pdg,
         gamma=gamma,
         T=30,              # outer steps
