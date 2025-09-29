@@ -1,0 +1,245 @@
+\documentclass[twoside]{article}
+
+\usepackage{aistats2026}
+% If your paper is accepted, change the options for the package
+% aistats2026 as follows:
+%
+%\usepackage[accepted]{aistats2026}
+%
+% This option will print headings for the title of your paper and
+% headings for the authors names, plus a copyright note at the end of
+% the first column of the first page.
+
+% We also include a `preprint' option for non-anonymous preprints. 
+% Change the options for the package aistats2026 as follows:
+%
+%\usepackage[preprint]{aistats2026}
+%
+% This option will print headings for the title of your paper and
+% headings for the authors names, but does not print the copyright and 
+% venue note at the end of the first column of the first page.
+
+% If you set papersize explicitly, activate the following three lines:
+%\special{papersize = 8.5in, 11in}
+%\setlength{\pdfpageheight}{11in}
+%\setlength{\pdfpagewidth}{8.5in}
+
+% If you use the natbib package, activate the following three lines:
+\usepackage[round]{natbib}
+\renewcommand{\bibname}{References}
+\renewcommand{\bibsection}{\subsubsection*{\bibname}}
+
+% If you use BibTeX in apalike style, activate the following line:
+\bibliographystyle{apalike}
+
+
+
+%%%%%%%%%%%%%% TODO CLEAN UP %%%%%%%%%%
+    % \usepackage{tikz}
+\usepackage{pdgtools}
+\usepackage[nobox]{restatelinks}
+
+
+    \usepackage[utf8]{inputenc} % allow utf-8 input
+    \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+    \usepackage{hyperref}       % hyperlinks
+    \usepackage{url}            % simple URL typesetting
+    \usepackage{booktabs}       % professional-quality tables
+    \usepackage{amsfonts}       % blackboard math symbols
+    \usepackage{nicefrac}       % compact symbols for 1/2, etc.
+    \usepackage{microtype}      % microtypography
+    \usepackage{xcolor}         % colors
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%% Custom  Preamble %%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \let\cite\citep
+    \usepackage{amsmath,amssymb,mathtools}
+    \usepackage{algorithm}
+    \usepackage[noend]{algorithmic}
+    \usepackage{enumitem}
+    \usepackage{bbm}
+    \usepackage[capitalize,noabbrev,nameinlink]{cleveref}
+
+
+    \relax % Short arrows.
+       \newcommand{\veryshortarrow}[1][3pt]{\mathrel{%
+       \vcenter{\hbox{\rule[-.5\fontdimen8\textfont3]{#1}{\fontdimen8\textfont3}}}%
+       \mkern-4mu\hbox{\usefont{U}{lasy}{m}{n}\symbol{41}}}}
+       \makeatletter
+       \setbox0\hbox{$\xdef\scriptratio{\strip@pt\dimexpr
+       \numexpr(\sf@size*65536)/\f@size sp}$}
+       \newcommand{\scriptveryshortarrow}[1][3pt]{\mathrel{%
+       \vcenter{\hbox{\rule[0\fontdimen8\scriptfont3]
+       {\scriptratio\dimexpr#1\relax}{\fontdimen8\scriptfont3}}}%
+       \mkern-4mu\hbox{\let\f@size\sf@size\usefont{U}{lasy}{m}{n}\symbol{41}}}}
+       % \newcommand{\sto}{\scriptveryshortarrow}
+       \makeatother
+       % \newcommand\sto{{{\scalebox{1}[1]{$\scriptstyle\to$}}}}
+       %
+       \newsavebox{\stosbox}
+       \sbox{\stosbox}{\begin{tikzpicture}\draw[->] (0,0) to (0.15,0);\end{tikzpicture}}
+       \newcommand\sto{\usebox\stosbox}
+       %%%
+       %%% hacky: now I have to do the same thing for green and blue
+       \newsavebox{\stosboxgreen}
+       \sbox{\stosboxgreen}{\begin{tikzpicture}\draw[->,green!70!black] (0,0) to (0.15,0);\end{tikzpicture}}
+       \newcommand\stogreen{\usebox\stosboxgreen}
+       \newsavebox{\stosboxblue}
+       \sbox{\stosboxblue}{\begin{tikzpicture}\draw[->,blue] (0,0) to (0.15,0);\end{tikzpicture}}
+       \newcommand\stoblue{\usebox\stosboxblue}
+       
+       % \newcommand\sto{\begin{tikzpicture}\draw[->] (0,0) to (0.15,0);\end{tikzpicture}}
+       % \newcommand\sto{\mspace{1mu}\begin{tikzpicture}\draw[bend left=0,-,shorten <=0,shorten >=0,thin,solid,] (0,0) to (0.15,0);\end{tikzpicture}}
+       % \usetikzlibrary{decorations.markings}
+       % \newcommand\sto{\mspace{1mu}\begin{tikzpicture}
+       %     \draw[bend left=0,-,shorten <=0,shorten >=0.2pt,thin,solid,decoration={markings,mark=at position 1 with {\arrow[scale=0.7]{>}}},
+       %     postaction={decorate},] (0,0) to (0.1,0);\end{tikzpicture}}
+
+    \let\Horig\H \let\H\relax
+    \DeclareMathOperator{\H}{\mathrm{H}} % Entropy
+    \DeclareMathOperator*{\Ex}{\mathbb{E}} % Expectation
+    \DeclarePairedDelimiterX{\infdivx}[2]{(}{)}{#1\;\delimsize\|\;#2}
+    \newcommand{\thickD}{I\mkern-8muD}
+    \newcommand{\kldiv}{\thickD\infdivx}
+    \newcommand\mat[1]{\mathbf{#1}}
+
+    \newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+
+    % \tikzset{factor/.style={draw,minimum width=1.5em, minimum height=1.5em,fill=black,text=white,font=\bfseries}}
+    \tikzset{factor/.style={draw,minimum width=1.5em, minimum height=1.5em,fill=gray!50!black,text=white,font=\mathversion{bold}\bfseries}}
+
+
+    \newcommand\btheta{\boldsymbol\theta}
+    \newcommand\Ctx{\dg{C\mskip-2mut\mskip-2mux}}
+    \newcommand\Mm{\dg{M}}
+    \newcommand\MThetadense{\dg{M}(\mskip-1mu\Theta\mskip-1mu)}
+    \newcommand\Attn{\dg{A\mskip-2.2mut\mskip-2mut\mskip-2mun}}
+    \newcommand\Ctrl{\dg{C\mskip-2mut\mskip-2mur\mskip-2mul}}
+
+    \newcommand\Msg{\dg{M\mskip-1mus\mskip-2mu g}}
+
+    % \newcommand\attn{\mathit{Attn}}
+    % \newcommand\ctrl{\mathit{Ctrl}}
+    % \newcommand\attn{\mathit{A}}
+    % \newcommand\ctrl{\mathit{C}}
+    \newcommand\attn{A}
+    \newcommand\ctrl{C}
+    % \newcommand\btheta{\boldsymbol\theta}
+
+    \hypersetup{colorlinks=true, linkcolor=blue!75!black, urlcolor=magenta, citecolor=green!50!black}
+    \newcommand\vfull[1]{}
+    \DeclareMathOperator*{\argmin}{arg\,min} % argmin
+    \DeclareMathOperator*{\argmax}{arg\,max} % argmax
+
+
+    % commenting
+    \usepackage[linecolor=black!20,textsize=tiny]{todonotes}
+    \setlength{\marginparwidth}{3.3cm}
+    \newcommand{\mehran}[1]{\todo[backgroundcolor=blue!20]{\textbf{Mehran:} #1}}
+    \newcommand{\ali}[1]{\todo[backgroundcolor=yellow!20]{\textbf{Ali:} #1}}
+    \newcommand{\oliver}[1]{\todo[backgroundcolor=green!20]{\textbf{Oliver:} #1}}
+
+
+
+\begin{document}
+
+% If your paper is accepted and the title of your paper is very long,
+% the style will print as headings an error message. Use the following
+% command to supply a shorter title of your paper so that it can be
+% used as headings.
+%
+%\runningtitle{I use this title instead because the last one was very long}
+
+% If your paper is accepted and the number of authors is large, the
+% style will print as headings an error message. Use the following
+% command to supply a shorter version of the author names so that
+% they can be used as headings (for example, use only the surnames)
+%
+%\runningauthor{Surname 1, Surname 2, Surname 3, ...., Surname n}
+
+\twocolumn[
+
+\aistatstitle{Local Inconsistency Resolution: The Interplay between Attention and Control in Probabilistic Models}
+
+\aistatsauthor{ Author 1 \And Author 2 \And  Author 3 }
+
+\aistatsaddress{ Institution 1 \And  Institution 2 \And Institution 3 } ]
+
+\begin{abstract}
+We present a generic algorithm for learning and approximate inference with an intuitive epistemic interpretation: iteratively focus on a subset of the model and resolve inconsistencies using the parameters under control. This framework, which we call Local Inconsistency Resolution (LIR) is built upon Probabilistic Dependency Graphs (PDGs), which provide a flexible representational foundation capable of capturing inconsistent beliefs. We show how LIR unifies and generalizes a wide variety of important algorithms in the literature, including the Expectation-Maximization (EM) algorithm, belief propagation, adversarial training, GANs, and GFlowNets. Each of these methods can be recovered as a specific instance of LIR by choosing a procedure to direct focus (attention and control). We implement this algorithm for discrete PDGs and study its properties on synthetically generated PDGs, comparing its behavior to the global optimization semantics of the full PDG.
+\end{abstract}
+
+
+\section{Introduction}
+\section{Preliminaries and Parametric PDGs}
+\section{The Local Inconsistency Resolution (LIR) Algorithm}
+\section{Unifying Classical Algorithms as Instances of LIR}
+\subsection{The Classification Setting}
+\subsection{The EM Algorithm and VAEs}
+\subsection{Generative Adversarial Networks}
+\subsection{Message Passing}
+\subsection{Transformer Layers}
+
+
+The key innovation of the transformer architecture \cite{vaswani2017attention}, the basis of modern language models, 
+% , in part because they do not have (arguably unstable) recurrances. 
+% The key innovation 
+is that of (scaled dot-product) (masked) \emph{self-attention}.
+%  which it turns out can be viewed as an instance of what we are calling attention.
+It turns out that this too can be viewed as an instance of our framework.
+
+Suppose that we are looking at a sequence of tokens $n$, whose current representations at some layer of the model are the vectors $x_1, \ldots, x_n \in \mathbb R^d$. 
+Let $x'_1, \ldots x'_n$ denote the transformed representations of these tokens. 
+
+Consider a PDG with variables $\mathcal X = \{ X_i \}_{i=1}^n \cup \{ X'_i\}_{i=1}^n$. 
+We now construct a bipartite graph, with $n^2 + 2n$ arcs; for each $(i,j) \in [n]^2$, 
+we have an arc 
+% $a_{ij} \in \Ar$ 
+with cpd $\p_{ij} = \mathcal N(X'_j \mid V_i, 1)$.
+If the cpd has attention $\varphi(ij) = \exp \langle q_j, k_i\rangle$.
+
+
+
+\begin{center}
+   \def\vdotsmall{\rotatebox{90}{$\cdot{\cdot}\cdot$}}
+   \begin{tikzpicture}
+      \node[dpad1] (X1) at (0, 3)  {$X_1$};
+      \node             at (0, 2.5) {\vdotsmall};
+      \node[dpad1] (Xi) at (0, 2)  {$X_i$};
+      \node             at (0, 1)  {\vdotsmall};
+      \node[dpad1] (Xn) at (0, 0)  {$X_n$};
+      %
+      \node[dpad1] (X1p) at (2, 3)  {$X'_1$};
+      \node              at (2, 2)  {\vdotsmall};
+      \node[dpad1] (Xjp) at (2, 1)  {$X'_j$};
+      \node              at (2, 0.5) {\vdotsmall};
+      \node[dpad1] (Xnp) at (2, 0)  {$X'_n$};
+      
+      \begin{scope}[{arr2,thin,gray}]
+      \draw[] (X1) to (X1p);
+      \draw[] (X1) to (Xjp); 
+      \draw[] (X1) to (Xnp);
+      \draw[] (Xi) to (X1p);
+      % \draw (Xi) to (Xjp); 
+      \draw[] (Xi) to (Xnp);
+      \draw[] (Xn) to (X1p);
+      \draw[] (Xn) to (Xjp);
+      \draw[] (Xn) to (Xnp);
+      \end{scope}
+      \draw[arr2] (Xi) to (Xjp); 
+   \end{tikzpicture}
+\end{center}
+
+
+
+\subsection{Generative Flow Networks}
+
+\section{Synthetic Experiments}
+\section{Conclusion}
+
+
+\bibliography{lir-refs}
+
+\end{document}

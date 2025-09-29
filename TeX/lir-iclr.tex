@@ -1979,10 +1979,58 @@ The same construction works for general cluster graphs,
 % % but it has
 % What makes this tractable, however, is that
 
-% \section{Generic Generative Modeling with LIR}
-% All of this suggests a general process by which
-% Suppose we want to generate some structured data .
-% The general idea
+
+\section{Transformer Layers as LIR}
+
+(Decoder-only) transformers \cite{TODO:Vaswani17} is an important development that has become the basis of modern language models.
+% , in part because they do not have (arguably unstable) recurrances. 
+The key innovation is that of (scaled dot-product) (masked) \emph{self-attention}, which it turns out can be viewed as an instance of what we are calling attention.
+
+Suppose that we are looking at a sequence of tokens $n$, whose current representations at some layer of the model are the vectors $x_1, \ldots, x_n \in \mathbb R^d$. 
+Let $x'_1, \ldots x'_n$ denote the transformed representations of these tokens. 
+
+Consider a PDG with variables $\mathcal X = \{ X_i \}_{i=1}^n \cup \{ X'_i\}_{i=1}^n$. 
+We now construct a bipartite graph, with $n^2 + 2n$ arcs; for each $(i,j) \in [n]^2$, 
+we have an arc 
+% $a_{ij} \in \Ar$ 
+with cpd $\p_{ij} = \mathcal N(X'_j \mid V_i, 1)$.
+If the cpd has attention $\varphi(ij) = \exp \langle q_j, k_i\rangle$.
+
+\begin{center}
+   \def\vdotsmall{\rotatebox{90}{$\cdot{\cdot}\cdot$}}
+   \begin{tikzpicture}
+      \node[dpad1] (X1) at (0, 3)  {$X_1$};
+      \node             at (0, 2.5) {\vdotsmall};
+      \node[dpad1] (Xi) at (0, 2)  {$X_i$};
+      \node             at (0, 1)  {\vdotsmall};
+      \node[dpad1] (Xn) at (0, 0)  {$X_n$};
+      %
+      \node[dpad1] (X1p) at (2, 3)  {$X'_1$};
+      \node              at (2, 2)  {\vdotsmall};
+      \node[dpad1] (Xjp) at (2, 1)  {$X'_j$};
+      \node              at (2, 0.5) {\vdotsmall};
+      \node[dpad1] (Xnp) at (2, 0)  {$X'_n$};
+      
+      \begin{scope}[{arr2,thin,gray}]
+      \draw[] (X1) to (X1p);
+      \draw[] (X1) to (Xjp); 
+      \draw[] (X1) to (Xnp);
+      \draw[] (Xi) to (X1p);
+      % \draw (Xi) to (Xjp); 
+      \draw[] (Xi) to (Xnp);
+      \draw[] (Xn) to (X1p);
+      \draw[] (Xn) to (Xjp);
+      \draw[] (Xn) to (Xnp);
+      \end{scope}
+      \draw[arr2] (Xi) to (Xjp); 
+   \end{tikzpicture}
+\end{center}
+
+
+
+
+
+
 
 \section{GFlowNet Training as LIR}
 
@@ -2033,7 +2081,7 @@ The probabilistic dependency graph of a GFlowNet can be depicted as follows:
 \]
 % \mehran{Actions are missing...}
 % \oliver{this is not a problem; they're already playing their appropriate role as the supports of $P_F$ and $P_B$.}
-
+%j 
 % \mehran{I'm having a lot of doubts what I proposed in the meeting but I'll write it down anyways. A possible better approach: model the log flow of each edge as a Gaussian random variable. We have two probabilistic models for this flow that are parameterized with the same learnable parameters $\theta$. One goes backward and one goes forward and they need to be made consistent.}
 
 The inconsistency can be written as:
