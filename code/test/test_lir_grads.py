@@ -35,8 +35,6 @@ We compare the actual PyTorch gradients on ParamCPD logits on both sides and
 require exact agreement to numerical precision (atol ≈ 1e-6) for several (r, s).
 """
 # run_me_check_f_vs_LIR_grads.py
-import sys
-import argparse
 import pytest
 import torch
 
@@ -135,17 +133,4 @@ def test_gradients_match_one_var_pdg(r, s):
     assert run(K=3, r=r, s=s, seed=0, atol=1e-6)
 
 
-# -------------------------
-# Commmand-Line Entry Point
-# -------------------------
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Check that ParamCPD grads after LIR equal grads of f.")
-    parser.add_argument("--K", type=int, default=3)
-    parser.add_argument("--r", type=float, default=1.0)
-    parser.add_argument("--s", type=float, default=1.0)
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--atol", type=float, default=1e-6)
-    args = parser.parse_args()
-
-    ok = run(K=args.K, r=args.r, s=args.s, seed=args.seed, atol=args.atol)
-    sys.exit(0 if ok else 1)
+# No CLI entry point in pytest files

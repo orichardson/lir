@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# test_lir_one_var_simple.py
+# one-var exploration/demo
 from pathlib import Path
 import sys
 import argparse
@@ -7,49 +7,17 @@ import argparse
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import torch
-import torch.nn.functional as F  # not strictly needed, kept for parity with your imports
-from pdg.pdg import PDG
-from pdg.rv import Variable as Var, Unit, JointStructure  # JointStructure unused, kept for parity
-from pdg.dist import CPT, ParamCPD
-from lir__simpler import lir_train_simple
 from pdg.alg.torch_opt import opt_joint
+from lir__simpler import lir_train
+from .helpers_one_var import make_one_var_two_cpd_pdg, normalized_geometric_mean
 
 
-def make_one_var_two_cpd_pdg(K: int = 4, seed: int = 0):
-    torch.manual_seed(seed)
-    X = Var.alph("X", K)
-    pdg = PDG() + X
-
-    # Two CPDs over X; use Unit as the "source" just to get an unconditional table shape
-    P_p = CPT.make_random(Unit, X)
-    P_q = CPT.make_random(Unit, X)
-
-    # Replace with ParamCPD; keep your simple setting: src_var=X, tgt_var=X, labels "p"/"q"
-    cpd_p = ParamCPD(src_var=X, tgt_var=X, name="p", init="random", mask=None, cpd=P_p)
-    cpd_q = ParamCPD(src_var=X, tgt_var=X, name="q", init="random", mask=None, cpd=P_q)
-
-    key_p = (X.name, X.name, "p")
-    key_q = (X.name, X.name, "q")
-
-    # Your code sets only β; keep that
-    pdg.edgedata[key_p] = {"cpd": cpd_p, "β": 1.0}
-    pdg.edgedata[key_q] = {"cpd": cpd_q, "β": 1.0}
-
-    return pdg, X, key_p, key_q
-
-
-def normalized_geometric_mean(p: torch.Tensor, q: torch.Tensor) -> torch.Tensor:
-    mu = torch.sqrt(p * q)
-    return mu / mu.sum()
-
-
-def run(K: int, T: int, inner: int, lr: float, gamma: float, seed: int, verbose: bool, anomaly: bool):
-    if anomaly:
-        torch.autograd.set_detect_anomaly(True)
+def run(K: int, T: int, inner: int, lr: float, gamma: float, seed: int, verbose: bool):
+    torch.autograd.set_detect_anomaly(True)
 
     pdg, X, key_p, key_q = make_one_var_two_cpd_pdg(K=K, seed=seed)
 
-    # Initial distributions (your code uses probs()[0] then view(-1))
+    # Initial distributions
     with torch.no_grad():
         p0 = pdg.edgedata[key_p]["cpd"].probs()[0].detach().view(-1)
         q0 = pdg.edgedata[key_q]["cpd"].probs()[0].detach().view(-1)
@@ -60,12 +28,13 @@ def run(K: int, T: int, inner: int, lr: float, gamma: float, seed: int, verbose:
     print("q0:", q0.tolist())
     print("mu0 (geomean):", mu0.tolist())
 
-    # Warm-start μ and train (same calls you had)
+    # Warm-start μ and train
     mu0_joint = opt_joint(pdg, gamma=gamma, iters=10, verbose=False)
-    lir_train_simple(
+    lir_train(
         M=pdg,
         gamma=gamma,
         T=T,
+        outer_iters=1,
         inner_iters=inner,
         lr=lr,
         optimizer_ctor=torch.optim.Adam,
@@ -81,15 +50,17 @@ def run(K: int, T: int, inner: int, lr: float, gamma: float, seed: int, verbose:
     print("pT:", pT.tolist())
     print("qT:", qT.tolist())
 
-    # Same checks as your test, but just print PASS/FAIL instead of pytest asserts
-    assert torch.allclose(pT, qT, atol=3e-3, rtol=0), "pT !≈ qT (atol=3e-3)"
-    assert torch.allclose(pT, mu0, atol=1e-2, rtol=0), "pT !≈ mu0 (atol=1e-2)"
-
-    print("\nAll checks passed ✅")
+    # Print PASS/FAIL for quick manual runs
+    ok_agree = torch.allclose(pT, qT, atol=3e-3, rtol=0)
+    ok_match = torch.allclose(pT, mu0, atol=1e-2, rtol=0)
+    print(f"(a) pT ≈ qT (atol=3e-3): {'PASS' if ok_agree else 'FAIL'}")
+    print(f"(b) pT ≈ mu0 (atol=1e-2): {'PASS' if ok_match else 'FAIL'}")
+    if ok_agree and ok_match:
+        print("\nAll checks passed ✅")
 
 
 def parse_args():
-    ap = argparse.ArgumentParser(description="Run simple LIR debug on one-var PDG (your minimal setting).")
+    ap = argparse.ArgumentParser(description="Run one-var LIR demo (de-duplicated)")
     ap.add_argument("--K", type=int, default=3, help="Cardinality of X")
     ap.add_argument("--T", type=int, default=60, help="Outer steps")
     ap.add_argument("--inner", type=int, default=30, help="Inner opt_joint iterations per outer step")
@@ -97,7 +68,6 @@ def parse_args():
     ap.add_argument("--gamma", type=float, default=0.0, help="opt_joint gamma")
     ap.add_argument("--seed", type=int, default=0, help="Random seed")
     ap.add_argument("--verbose", action="store_true", help="Verbose outer-loop logging")
-    ap.add_argument("--anomaly", action="store_true", help="Enable torch autograd anomaly detection")
     return ap.parse_args()
 
 
@@ -111,7 +81,6 @@ def main():
         gamma=args.gamma,
         seed=args.seed,
         verbose=args.verbose,
-        anomaly=args.anomaly,
     )
 
 
