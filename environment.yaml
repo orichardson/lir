@@ -1,0 +1,16 @@
+name: lir
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.9
+  - numpy
+  - scipy
+  - pandas
+  - pgmpy
+  - opt_einsum
+  - pyro-ppl
+  - pip
+  - pytest
+  - pip:
+      - torch>=2.3
+

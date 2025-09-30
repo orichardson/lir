@@ -1,5 +1,5 @@
-[submodule "code/pdg"]
-	path = code/pdg
+[submodule "lir/pdg"]
+	path = lir/pdg
 	url = git@github.com:orichardson/pdg.git
-	branch = lir
+	branch = master
 	update = merge
