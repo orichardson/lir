@@ -21,10 +21,16 @@ Test
 
 import torch
 import pytest
+from pathlib import Path
+import sys
 
 from pdg.alg.torch_opt import opt_joint
 from lir__simpler import lir_train
-from .helpers_one_var import make_one_var_two_cpd_pdg, normalized_geometric_mean
+
+# Ensure the repository's code/ and this test dir are on sys.path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # .../code
+sys.path.insert(0, str(Path(__file__).parent))                # .../code/test
+from helpers_one_var import make_one_var_two_cpd_pdg, normalized_geometric_mean  # noqa: E402
 
 
 @pytest.mark.parametrize("K", [3, 4])

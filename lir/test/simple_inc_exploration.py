@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import torch
 from pdg.alg.torch_opt import opt_joint
 from lir__simpler import lir_train
-from .helpers_one_var import make_one_var_two_cpd_pdg, normalized_geometric_mean
+from test.helpers_one_var import make_one_var_two_cpd_pdg, normalized_geometric_mean
 
 
 def run(K: int, T: int, inner: int, lr: float, gamma: float, seed: int, verbose: bool):

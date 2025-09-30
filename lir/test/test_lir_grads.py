@@ -37,12 +37,13 @@ require exact agreement to numerical precision (atol ≈ 1e-6) for several (r, s
 # run_me_check_f_vs_LIR_grads.py
 import pytest
 import torch
+from pathlib import Path
+import sys
 
-# If needed, uncomment this to add your repo root to PYTHONPATH
-# from pathlib import Path
-# sys.path.append(str(Path(__file__).resolve().parents[1]))
-
-from .helpers_one_var import (
+# Ensure the repository's code/ and this test dir are on sys.path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # .../code
+sys.path.insert(0, str(Path(__file__).parent))                # .../code/test
+from helpers_one_var import (  # noqa: E402
     make_one_var_two_cpd_pdg,
     get_pq_from_pdg,
     weighted_geometric_mean,
