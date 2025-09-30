@@ -10,6 +10,7 @@ dependencies:
   - opt_einsum
   - pyro-ppl
   - pip
+  - pytest
   - pip:
       - torch>=2.3
 
