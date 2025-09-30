@@ -42,9 +42,10 @@ The overall structure is roughly as follows:
 ```
 README.md
 TeX/
-code/
+lir/
 |-- expts/
 |-- pdg/
+|-- test/
 ```
 
 Fragments of math can be found in the `TeX` folder.
