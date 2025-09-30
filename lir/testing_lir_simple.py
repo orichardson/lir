@@ -291,9 +291,9 @@ def test_refocus_masks(num_vars=4, num_edges=5, gamma=0.2, seed=1, init="from_cp
 if __name__ == "__main__":
     
     #uniform <=> all edges initialized to ones except the projection edges which are initialized to what they were in the cpd
-    _mu, _pdg = test_lir_on_random_pdg(init = "uniform", gamma=0.0)  # "from_cpd" or "uniform" or "random"
+    _mu, _pdg = test_lir_on_random_pdg(init = "random", gamma=0.0)  # "from_cpd" or "uniform" or "random"
     print(_mu)
     print(_pdg)
 
     print("\n--- Running refocus mask test ---")
-    test_refocus_masks(init="uniform", gamma=0.2)
+    test_refocus_masks(init="random", gamma=0.0)
