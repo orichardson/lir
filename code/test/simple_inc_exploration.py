@@ -4,6 +4,8 @@ from pathlib import Path
 import sys
 import argparse
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import torch
 import torch.nn.functional as F  # not strictly needed, kept for parity with your imports
 from pdg.pdg import PDG
@@ -80,16 +82,8 @@ def run(K: int, T: int, inner: int, lr: float, gamma: float, seed: int, verbose:
     print("qT:", qT.tolist())
 
     # Same checks as your test, but just print PASS/FAIL instead of pytest asserts
-    ok_agree = torch.allclose(pT, qT, atol=3e-3, rtol=0)
-    ok_match = torch.allclose(pT, mu0, atol=1e-2, rtol=0)
-
-    print("\n=== Checks ===")
-    print(f"(a) pT ≈ qT (atol=3e-3): {'PASS' if ok_agree else 'FAIL'}")
-    print(f"(b) pT ≈ mu0 (atol=1e-2): {'PASS' if ok_match else 'FAIL'}")
-
-    if not (ok_agree and ok_match):
-        # non-zero exit makes it easy to spot failures in shell
-        sys.exit(1)
+    assert torch.allclose(pT, qT, atol=3e-3, rtol=0), "pT !≈ qT (atol=3e-3)"
+    assert torch.allclose(pT, mu0, atol=1e-2, rtol=0), "pT !≈ mu0 (atol=1e-2)"
 
     print("\nAll checks passed ✅")
 

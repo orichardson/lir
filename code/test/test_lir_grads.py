@@ -1,92 +1,81 @@
 #!/usr/bin/env python3
+"""
+Analytic-gradient check for the one-variable PDG.
+
+Problem setup (smallest possible case):
+  - A single random variable X with |X| = K.
+  - Two learnable CPDs over X with labels "p" and "q" (both unconditional; we
+    use Unit->X only to get the right array shapes). The graph stores only β=1
+    weights; α is irrelevant here.
+
+Analytic inconsistency for this case:
+  Let p, q be the probability vectors parameterized by the two CPDs and let
+  r, s > 0 be weights. Define
+
+      f(p, q; r, s) = (r + s) * logsumexp( (r log p + s log q) / (r + s) ).
+
+  The inner optimum μ* (the μ that minimizes the inner objective for fixed p, q)
+  is the normalized weighted geometric mean
+
+      μ*(x) ∝ p(x)^{r/(r+s)} q(x)^{s/(r+s)}.
+
+Envelope theorem (control = 1, but μ detached):
+  When we differentiate the outer objective with μ fixed at μ*, the gradient w.r.t.
+  the parameters of p and q equals the gradient of
+
+      r * KL( μ* || p ) + s * KL( μ* || q ),
+
+  where μ* is treated as a constant during backward(). This test verifies that
+  autograd through the library implementation produces the same gradients as the
+  analytic f(p, q; r, s) above. In other words,
+
+      ∇_θ f(p, q; r, s)  ==  ∇_θ [ r KL(μ*||p) + s KL(μ*||q) ]  (μ* detached)
+
+We compare the actual PyTorch gradients on ParamCPD logits on both sides and
+require exact agreement to numerical precision (atol ≈ 1e-6) for several (r, s).
+"""
 # run_me_check_f_vs_LIR_grads.py
-from pathlib import Path
 import sys
 import argparse
+import pytest
 import torch
-import torch.nn.functional as F
 
 # If needed, uncomment this to add your repo root to PYTHONPATH
+# from pathlib import Path
 # sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from pdg.pdg import PDG
-from pdg.rv import Variable as Var, Unit  # JointStructure not needed here
-from pdg.dist import CPT, ParamCPD
-
-
-# ---------- math helpers ----------
-
-def weighted_geometric_mean(p: torch.Tensor, q: torch.Tensor, r: float, s: float, eps: float = 1e-12):
-    """
-    μ*(x) ∝ p(x)^{α} q(x)^{1-α}, α = r/(r+s).
-    Computed stably in log-space and returned normalized.
-    """
-    α = r / (r + s)
-    a = α * torch.log(p + eps) + (1 - α) * torch.log(q + eps)   # log of unnormalized μ
-    logZ = torch.logsumexp(a, dim=-1)
-    mu = torch.exp(a - logZ)
-    return mu  # shape [K]
-
-def f_inconsistency(p: torch.Tensor, q: torch.Tensor, r: float, s: float, eps: float = 1e-12):
-    """
-    f(p,q,r,s) = (r+s) * log sum_x (p(x)^r q(x)^s)^{1/(r+s)}
-               = (r+s) * logsumexp( (r*log p + s*log q)/(r+s) )
-    """
-    a = (r * torch.log(p + eps) + s * torch.log(q + eps)) / (r + s)
-    logZ = torch.logsumexp(a, dim=-1)
-    return (r + s) * logZ
-
-
-def kl_mu_to_p(mu: torch.Tensor, p: torch.Tensor, eps: float = 1e-12):
-    """
-    KL(mu || p) = sum_x mu(x) * (log mu(x) - log p(x))
-    NOTE: mu is treated as a constant during backward when we detach it.
-    """
-    return (mu * (torch.log(mu + eps) - torch.log(p + eps))).sum()
-
-
-# ---------- PDG (your simple setting) ----------
-
-def make_one_var_two_cpd_pdg(K: int = 4, seed: int = 0):
-    torch.manual_seed(seed)
-    X = Var.alph("X", K)
-    pdg = PDG() + X
-
-    # make shapes via Unit->X (unconditional table shape)
-    P_p = CPT.make_random(Unit, X)
-    P_q = CPT.make_random(Unit, X)
-
-    # keep your simple wiring: ParamCPD(src=X, tgt=X) and labels "p"/"q"
-    cpd_p = ParamCPD(src_var=X, tgt_var=X, name="p", init="random", mask=None, cpd=P_p)
-    cpd_q = ParamCPD(src_var=X, tgt_var=X, name="q", init="random", mask=None, cpd=P_q)
-
-    key_p = (X.name, X.name, "p")
-    key_q = (X.name, X.name, "q")
-    pdg.edgedata[key_p] = {"cpd": cpd_p, "β": 1.0}
-    pdg.edgedata[key_q] = {"cpd": cpd_q, "β": 1.0}
-    return pdg, X, key_p, key_q
-
-
-def get_pq_from_pdg(pdg, key_p, key_q):
-    """
-    Matches your own access pattern: probs()[0].view(-1)
-    """
-    p = pdg.edgedata[key_p]["cpd"].probs()[0].view(-1)  # shape [K]
-    q = pdg.edgedata[key_q]["cpd"].probs()[0].view(-1)
-    return p, q
+from .helpers_one_var import (
+    make_one_var_two_cpd_pdg,
+    get_pq_from_pdg,
+    weighted_geometric_mean,
+    f_inconsistency,
+    kl_mu_to_p,
+)
 
 
 # ---------- experiment ----------
-
 def run(K=3, r=1.0, s=1.0, seed=0, atol=1e-6):
+    """Execute the gradient-equivalence experiment for given K, r, s.
+
+    Steps
+      1) Build the PDG and pull out `p` and `q`.
+      2) Compute analytic `loss_f = f(p, q; r, s)` and backprop to get grads on
+         the ParamCPD logits.
+      3) Re-zero grads. Compute μ* = weighted_geometric_mean(p, q, r, s) and
+         DETACH it. Backprop `r KL(μ*||p) + s KL(μ*||q)` to get envelope grads.
+      4) Compare both gradient tensors entry-wise (max abs diff).
+    Returns True iff both p- and q-side gradients match within `atol`.
+    """
     pdg, X, key_p, key_q = make_one_var_two_cpd_pdg(K=K, seed=seed)
     cpd_p = pdg.edgedata[key_p]["cpd"]
     cpd_q = pdg.edgedata[key_q]["cpd"]
 
     # --- grads of f ---
     # zero
-    if cpd_p.logits.grad is not None: cpd_p.logits.grad.zero_()
-    if cpd_q.logits.grad is not None: cpd_q.logits.grad.zero_()
+    if cpd_p.logits.grad is not None:
+        cpd_p.logits.grad.zero_()
+    if cpd_q.logits.grad is not None:
+        cpd_q.logits.grad.zero_()
 
     p, q = get_pq_from_pdg(pdg, key_p, key_q)
     loss_f = f_inconsistency(p, q, r, s)      # (r+s) * logsumexp(...)
@@ -126,10 +115,7 @@ def run(K=3, r=1.0, s=1.0, seed=0, atol=1e-6):
     # For reference: ∇_{θ_p} f = - r * (p - μ), ∇_{θ_q} f = - s * (q - μ)
     # (because f is +(r+s) logZ; if you used - (r+s) logZ, the sign flips)
     with torch.no_grad():
-        # map per-row logits -> per-row probs gradient using your layout:
-        # We only check norms here since ParamCPD may arrange logits along rows/cols internally.
-        gp_expected = -r * (p - mu)   # shape [K]
-        gq_expected = -s * (q - mu)   # shape [K]
+        # Reference norms only (avoid unused variables)
         print("‖p - μ‖₁:", float((p - mu).abs().sum()))
         print("‖q - μ‖₁:", float((q - mu).abs().sum()))
         print("(Reference sign only)")
@@ -137,6 +123,21 @@ def run(K=3, r=1.0, s=1.0, seed=0, atol=1e-6):
     return ok
 
 
+# ----------------------
+# PyTest entry points
+# ----------------------
+@pytest.mark.parametrize("r,s", [
+    (1.0, 1.0),
+    (2.0, 1.0),
+    (0.7, 1.3),
+])
+def test_gradients_match_one_var_pdg(r, s):
+    assert run(K=3, r=r, s=s, seed=0, atol=1e-6)
+
+
+# -------------------------
+# Commmand-Line Entry Point
+# -------------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Check that ParamCPD grads after LIR equal grads of f.")
     parser.add_argument("--K", type=int, default=3)
