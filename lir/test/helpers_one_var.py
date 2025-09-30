@@ -39,8 +39,11 @@ def make_one_var_two_cpd_pdg(K: int = 3, seed: int = 0) -> Tuple[PDG, Var, tuple
 
     key_p = (X.name, X.name, "p")
     key_q = (X.name, X.name, "q")
-    pdg.edgedata[key_p] = {"cpd": cpd_p, "β": 1.0}
-    pdg.edgedata[key_q] = {"cpd": cpd_q, "β": 1.0}
+
+    # Use ASCII field names expected by PDG tooling
+    pdg.edgedata[key_p] = {"cpd": cpd_p, "beta": 1.0, "alpha": 1.0}
+    pdg.edgedata[key_q] = {"cpd": cpd_q, "beta": 1.0, "alpha": 1.0}
+
     return pdg, X, key_p, key_q
 
 
@@ -67,14 +70,14 @@ def weighted_geometric_mean(p: torch.Tensor, q: torch.Tensor, r: float, s: float
 
 
 def f_inconsistency(p: torch.Tensor, q: torch.Tensor, r: float, s: float, eps: float = 1e-12) -> torch.Tensor:
-    """Analytic inconsistency f for the one-variable two-CPD graph.
+    """Analytic inconsistency f (with the conventional leading negative sign).
 
-    f(p, q; r, s) = (r+s) * log sum_x (p(x)^r q(x)^s)^{1/(r+s)}
-                  = (r+s) * logsumexp( (r*log p + s*log q)/(r+s) ).
+    f(p, q; r, s) = - (r+s) * log sum_x (p(x)^r q(x)^s)^{1/(r+s)}
+                   = - (r+s) * logsumexp( (r*log p + s*log q)/(r+s) ).
     """
     a = (r * torch.log(p + eps) + s * torch.log(q + eps)) / (r + s)
     logZ = torch.logsumexp(a, dim=-1)
-    return (r + s) * logZ
+    return - (r + s) * logZ
 
 
 def kl_mu_to_p(mu: torch.Tensor, p: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:

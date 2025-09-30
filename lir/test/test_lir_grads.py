@@ -40,9 +40,9 @@ import torch
 from pathlib import Path
 import sys
 
-# Ensure the repository's code/ and this test dir are on sys.path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # .../code
-sys.path.insert(0, str(Path(__file__).parent))                # .../code/test
+# Ensure project dir (containing lir__simpler.py) and this test dir are on sys.path BEFORE imports
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # .../lir
+sys.path.insert(0, str(Path(__file__).parent))                # .../lir/test
 from helpers_one_var import (  # noqa: E402
     make_one_var_two_cpd_pdg,
     get_pq_from_pdg,

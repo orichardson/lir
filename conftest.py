@@ -9,5 +9,9 @@ import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-CODE_DIR = PROJECT_ROOT / "lir"
-sys.path.insert(0, str(CODE_DIR))
+
+# Ensure both possible project roots are importable:
+# - code/ contains modules like `lir__simpler.py`
+# - lir/ now contains tests; keeping it on path is harmless and can help
+PKG_DIR = PROJECT_ROOT / "lir"
+sys.path.insert(0, str(PKG_DIR))
