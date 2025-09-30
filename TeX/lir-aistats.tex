@@ -37,8 +37,21 @@
 %%%%%%%%%%%%%% TODO CLEAN UP %%%%%%%%%%
     % \usepackage{tikz}
 \usepackage{pdgtools}
-\usepackage[nobox]{restatelinks}
 
+    \usepackage{amsthm,thmtools}
+    \theoremstyle{plain}
+    % \newtheorem{theorem}{Theorem}[section]
+    \newtheorem{theorem}{Theorem}
+    \newtheorem{prop}[theorem]{Proposition}
+    \newtheorem{lemma}[theorem]{Lemma}
+    \newtheorem{corollary}[theorem]{Corollary}
+    \theoremstyle{definition}
+    \newtheorem{definition}{Definition}
+    \newtheorem{assumption}[definition]{Assumption}
+    \theoremstyle{remark}
+    \newtheorem{remark}[theorem]{Remark}
+
+   \usepackage[nobox]{restatelinks}
 
     \usepackage[utf8]{inputenc} % allow utf-8 input
     \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
@@ -188,7 +201,9 @@ The key innovation of the transformer architecture \cite{vaswani2017attention}, 
 % The key innovation 
 is that of (scaled dot-product) (masked) \emph{self-attention}.
 %  which it turns out can be viewed as an instance of what we are calling attention.
-It turns out that this too can be viewed as an instance of our framework.
+% It turns out that this too can be viewed as an instance of our framework.
+% Intuitively, it makes the model explicitly choose to focus on some parts of the input over others. 
+This notion of attention can be viewed as an instance of our framework.
 
 Suppose that we are looking at a sequence of tokens $n$, whose current representations at some layer of the model are the vectors $x_1, \ldots, x_n \in \mathbb R^d$. 
 Let $x'_1, \ldots x'_n$ denote the transformed representations of these tokens. 
@@ -197,7 +212,8 @@ Consider a PDG with variables $\mathcal X = \{ X_i \}_{i=1}^n \cup \{ X'_i\}_{i=
 We now construct a bipartite graph, with $n^2 + 2n$ arcs; for each $(i,j) \in [n]^2$, 
 we have an arc 
 % $a_{ij} \in \Ar$ 
-with cpd $\p_{ij} = \mathcal N(X'_j \mid V_i, 1)$.
+with cpd $\p_{ij} = \mathcal N(X'_j \mid V x_i, \sigma_{ij}^2)$, and we
+   also have arcs specifying the values of
 If the cpd has attention $\varphi(ij) = \exp \langle q_j, k_i\rangle$.
 
 
@@ -206,15 +222,15 @@ If the cpd has attention $\varphi(ij) = \exp \langle q_j, k_i\rangle$.
    \def\vdotsmall{\rotatebox{90}{$\cdot{\cdot}\cdot$}}
    \begin{tikzpicture}
       \node[dpad1] (X1) at (0, 3)  {$X_1$};
-      \node             at (0, 2.5) {\vdotsmall};
-      \node[dpad1] (Xi) at (0, 2)  {$X_i$};
-      \node             at (0, 1)  {\vdotsmall};
+      \node             at (0, 2.4) {\vdotsmall};
+      \node[dpad1,draw=black] (Xi) at (0, 1.8)  {$X_i$};
+      \node             at (0, 0.9)  {\vdotsmall};
       \node[dpad1] (Xn) at (0, 0)  {$X_n$};
       %
       \node[dpad1] (X1p) at (2, 3)  {$X'_1$};
-      \node              at (2, 2)  {\vdotsmall};
-      \node[dpad1] (Xjp) at (2, 1)  {$X'_j$};
-      \node              at (2, 0.5) {\vdotsmall};
+      \node              at (2, 2.1)  {\vdotsmall};
+      \node[dpad1,draw=black] (Xjp) at (2, 1.2)  {$X'_j$};
+      \node              at (2, 0.6) {\vdotsmall};
       \node[dpad1] (Xnp) at (2, 0)  {$X'_n$};
       
       \begin{scope}[{arr2,thin,gray}]
@@ -228,10 +244,31 @@ If the cpd has attention $\varphi(ij) = \exp \langle q_j, k_i\rangle$.
       \draw[] (Xn) to (Xjp);
       \draw[] (Xn) to (Xnp);
       \end{scope}
-      \draw[arr2] (Xi) to (Xjp); 
+      \draw[arr2] (Xi) to node[inner sep=2pt,fill=white]{$\p_{ij}$} (Xjp); 
+      
+      % draw x and x'
+      \node at (-0.6,3.4) {$x$};
+      \node at (2.6,3.4) {$x'$};
+      \begin{scope}[arr2, ->>, shorten <=0pt]
+         \draw[] (-0.8,3.5) -- (-0.8, 0) -- (Xn);
+         \draw[] (-0.8,3) -- (X1);
+         \draw[] (-0.8,1.8) -- (Xi);
+
+         \draw[] (2.8,3.5) -- (2.8, 0) -- (Xnp);
+         \draw[] (2.8,3) -- (X1p);
+         \draw[] (2.8,1.2) -- (Xjp);
+      \end{scope}
    \end{tikzpicture}
 \end{center}
 
+
+\begin{prop}
+   LIR applied to the PDG above, where $\phi_{ij} \propto \exp ( x_j KQ^{\sf T} x_i / \sqrt{d})$, when controlling $x'$, leads to 
+   % $x_j' = \sum_i \alpha_{i|j} V x_i$ where $\alpha_{i|j} = \mathrm{Softmax}(x_j KQ^{\sf T} x_i / \sqrt{d})$.
+   $x_j' = \sum_i \Big( \exp(x_j KQ^{\sf T} x_i) / \sum_{i'} \exp(x_j KQ^{\sf T} x_{i'}) \Big)V x_i$.
+\end{prop}
+
+Notably, this model forces softmax normalization to be row-wise.
 
 
 \subsection{Generative Flow Networks}
