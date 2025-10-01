@@ -1,5 +1,5 @@
 [submodule "src/pdg"]
 	path = src/pdg
-	url = git@github.com:orichardson/pdg.git
+	url = https://github.com/orichardson/pdg.git
 	branch = master
 	update = merge
