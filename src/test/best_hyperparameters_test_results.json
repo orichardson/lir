@@ -1,0 +1,67 @@
+[
+  {
+    "pattern": "chain",
+    "pdg_name": "chain_pdg",
+    "alpha": 0.5,
+    "beta": 0.5,
+    "initial_global": 0.09882211685180664,
+    "final_global": 0.02415233664214611,
+    "improvement_global": 75.55978619809886,
+    "initial_local": 0.09948570281267166,
+    "final_local": 0.027065008878707886,
+    "improvement_local": 72.7950769673202,
+    "success": true
+  },
+  {
+    "pattern": "star",
+    "pdg_name": "star_pdg",
+    "alpha": 2.0,
+    "beta": 0.5,
+    "initial_global": 0.05988749861717224,
+    "final_global": 0.057998307049274445,
+    "improvement_global": 3.1545674999290867,
+    "initial_local": 0.06050931289792061,
+    "final_local": 0.05465314909815788,
+    "improvement_local": 9.678119812138823,
+    "success": true
+  },
+  {
+    "pattern": "tree",
+    "pdg_name": "tree_pdg",
+    "alpha": 0.5,
+    "beta": 0.5,
+    "initial_global": 0.027968406677246094,
+    "final_global": 0.005270072259008884,
+    "improvement_global": 81.15705224174822,
+    "initial_local": 0.028542587533593178,
+    "final_local": 0.009305386804044247,
+    "improvement_local": 67.39823678181848,
+    "success": true
+  },
+  {
+    "pattern": "random",
+    "pdg_name": "random_pdg",
+    "alpha": 2.0,
+    "beta": 0.5,
+    "initial_global": 0.017467232421040535,
+    "final_global": 0.02078166976571083,
+    "improvement_global": -18.975171708815292,
+    "initial_local": 0.019297394901514053,
+    "final_local": 0.01964763179421425,
+    "improvement_local": -1.8149439055772036,
+    "success": true
+  },
+  {
+    "pattern": "cycle",
+    "pdg_name": "cycle_pdg",
+    "alpha": 0.5,
+    "beta": 0.5,
+    "initial_global": 0.10643219947814941,
+    "final_global": 0.04239853471517563,
+    "improvement_global": 60.16380858136821,
+    "initial_local": 0.10618076473474503,
+    "final_local": 0.044782452285289764,
+    "improvement_local": 57.824326847557714,
+    "success": true
+  }
+]
