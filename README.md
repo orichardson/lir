@@ -43,10 +43,11 @@ The overall structure is roughly as follows:
 ```
 README.md
 TeX/
-lir/
+src/
 |-- expts/
-|-- pdg/
-|-- test/
+|-- pdg/  # the submodule
+|-- test/ # for tests
+|-- ( .py files for basic testing and implementation )
 ```
 
 Fragments of math can be found in the `TeX` folder.
