@@ -1,30 +1,44 @@
-\documentclass{article} % For LaTeX2e
-\usepackage{iclr2026_conference,times}
+\documentclass[twoside]{article}
 
-\usepackage{hyperref}
-\usepackage{url}
+\usepackage{aistats2026}
+% If your paper is accepted, change the options for the package
+% aistats2026 as follows:
+%
+%\usepackage[accepted]{aistats2026}
+%
+% This option will print headings for the title of your paper and
+% headings for the authors names, plus a copyright note at the end of
+% the first column of the first page.
 
+% We also include a `preprint' option for non-anonymous preprints. 
+% Change the options for the package aistats2026 as follows:
+%
+%\usepackage[preprint]{aistats2026}
+%
+% This option will print headings for the title of your paper and
+% headings for the authors names, but does not print the copyright and 
+% venue note at the end of the first column of the first page.
 
-\usepackage{pdgtools}
-\usepackage[nobox]{restatelinks}
+% If you set papersize explicitly, activate the following three lines:
+%\special{papersize = 8.5in, 11in}
+%\setlength{\pdfpageheight}{11in}
+%\setlength{\pdfpagewidth}{8.5in}
 
-%% theorems %
-    \usepackage{amsthm,thmtools}
-    \theoremstyle{plain}
-    % \newtheorem{theorem}{Theorem}[section]
-    \newtheorem{theorem}{Theorem}
-    \newtheorem{proposition}[theorem]{Proposition}
-    \newtheorem{lemma}[theorem]{Lemma}
-    \newtheorem{corollary}[theorem]{Corollary}
-    \theoremstyle{definition}
-    \newtheorem{definition}{Definition}
-    \newtheorem{assumption}[definition]{Assumption}
-    \theoremstyle{remark}
-    \newtheorem{remark}[theorem]{Remark}
+% If you use the natbib package, activate the following three lines:
+\usepackage[round]{natbib}
+\renewcommand{\bibname}{References}
+\renewcommand{\bibsection}{\subsubsection*{\bibname}}
+
+% If you use BibTeX in apalike style, activate the following line:
+\bibliographystyle{apalike}
+
 
 
 %%%%%%%%%%%%%% TODO CLEAN UP %%%%%%%%%%
-    
+    % \usepackage{tikz}
+\usepackage{pdgtools}
+
+   \usepackage[nobox]{restatelinks}
 
     \usepackage[utf8]{inputenc} % allow utf-8 input
     \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
@@ -47,6 +61,23 @@
     \usepackage{enumitem}
     \usepackage{bbm}
     \usepackage[capitalize,noabbrev,nameinlink]{cleveref}
+
+    
+    \usepackage{amsthm,thmtools}
+    \theoremstyle{plain}
+    % \newtheorem{theorem}{Theorem}[section]
+    \newtheorem{theorem}{Theorem}
+    \newtheorem{prop}[theorem]{Proposition}
+    \newtheorem{lemma}[theorem]{Lemma}
+    \newtheorem{corollary}[theorem]{Corollary}
+    \theoremstyle{definition}
+    \newtheorem{definition}{Definition}
+    \newtheorem{assumption}[definition]{Assumption}
+    \theoremstyle{remark}
+    \newtheorem{remark}[theorem]{Remark}
+    
+   \crefname{prop}{Proposition}{Propositions}
+
 
 
     \relax % Short arrows.
@@ -122,155 +153,92 @@
 
     % commenting
     \usepackage[linecolor=black!20,textsize=tiny]{todonotes}
-    \setlength{\marginparwidth}{3.3cm}
+   %  \setlength{\marginparwidth}{3.3cm}
+    \newcommand\commentout[1]{} % remove material with proper scoping and nesting
     \newcommand{\mehran}[1]{\todo[backgroundcolor=blue!20]{\textbf{Mehran:} #1}}
     \newcommand{\ali}[1]{\todo[backgroundcolor=yellow!20]{\textbf{Ali:} #1}}
     \newcommand{\oliver}[1]{\todo[backgroundcolor=green!20]{\textbf{Oliver:} #1}}
 
 
 
-
-
-
-
-\title{Local Inconsistency Resolution}
-
-% Authors must not appear in the submitted version. They should be hidden
-% as long as the \iclrfinalcopy macro remains commented out below.
-% Non-anonymous submissions will be rejected without review.
-\author{
-% Antiquus S.~Hippocampus, Natalia Cerebro \& Amelie P. Amygdale \thanks{ Use footnote for providing further information
-% about author (webpage, alternative address)---\emph{not} for acknowledging
-% funding agencies.  Funding acknowledgements go at the end of the paper.} \\
-% Department of Computer Science\\
-% Cranberry-Lemon University\\
-% Pittsburgh, PA 15213, USA \\
-% \texttt{\{hippo,brain,jen\}@cs.cranberry-lemon.edu} \\
-% \And
-% Ji Q. Ren \& Yevgeny LeNet \\
-% Department of Computational Neuroscience \\
-% University of the Witwatersrand \\
-% Joburg, South Africa \\
-% \texttt{\{robot,net\}@wits.ac.za} \\
-% \AND
-% Coauthor \\
-% Affiliation \\
-% Address \\
-% \texttt{email}
-% Oliver E.~Richardson, 
-    % TODO: determine author order
-    % Abdessamad 
-    % Mandana
-    % Mehran
-    % Ali
-    % Yoshua
-AUTHORS \\
-Department of Computer Science\\
-University of Montreal / Mila\\
-Montr\'{e}al, QC H3T 1J4 \\
-\texttt{\{-,-,-\}@mila.quebec}
-}
-
-% The \author macro works with any number of authors. There are two commands
-% used to separate the names and addresses of multiple authors: \And and \AND.
-%
-% Using \And between authors leaves it to \LaTeX{} to determine where to break
-% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
-% puts 3 of 4 authors names on the first line, and the last on the second
-% line, try using \AND instead of \And before the third author name.
-
-\newcommand{\fix}{\marginpar{FIX}}
-\newcommand{\new}{\marginpar{NEW}}
-
-
-% \iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
-
 \begin{document}
 
-\maketitle
+% If your paper is accepted and the title of your paper is very long,
+% the style will print as headings an error message. Use the following
+% command to supply a shorter title of your paper so that it can be
+% used as headings.
+%
+%\runningtitle{I use this title instead because the last one was very long}
+
+% If your paper is accepted and the number of authors is large, the
+% style will print as headings an error message. Use the following
+% command to supply a shorter version of the author names so that
+% they can be used as headings (for example, use only the surnames)
+%
+%\runningauthor{Surname 1, Surname 2, Surname 3, ...., Surname n}
+
+\twocolumn[
+
+\aistatstitle{Local Inconsistency Resolution: The Interplay between Attention and Control in Probabilistic Models}
+
+\aistatsauthor{ Author 1 \And Author 2 \And  Author 3 }
+
+\aistatsaddress{ Institution 1 \And  Institution 2 \And Institution 3 } ]
 
 \begin{abstract}
-    %%% Ali's draft
-    %Building on Probabilistic Dependency Graphs (PDGs)---a new class of directed graphical models capable of representing inconsistent beliefs and generalizing Bayesian Networks---we introduce a generic algorithm for learning and approximate inference across a wide class of probabilistic models. Our algorithm is based on a simple epistemic principle: focus on a subset of variables and iteratively resolve inconsistencies using the parameters under control. This framework naturally unifies and generalizes a variety of existing methods, including the Expectation-Maximization (EM) algorithm, belief propagation, adversarial training, GANs, and GFlowNets. PDGs provide the underlying representational foundation, offering modularity, flexibility in incorporating new information, and a scoring function formalism that quantifies model-data incompatibility. Furthermore, PDGs generalize to  Bayesian Networks, factor graphs, and exponential family models, highlighting their expressive power in a broad range of machine learning scenarios.
-    %%% Original draft
-    % We present a generic algorithm for learning and approximate inference across a broad class of probabilistic models, unifying many important algorithms in the literature (e.g., the EM algorithm, adversarial training, belief propagation, the training of GANs and GFlowNets). Each algorithm  can be naturally viewed as an instance of a simple procedure that with an intuitive epistemic interpretation: focus your attention on a subset of variables and resolve the inconsistencies among them using the parameters under control.  Our account is based on the theory of probabilistic dependency graphs (PDGs), an expressive class of graphical models rooted in information theory, which can capture inconsistent beliefs and many scenarios in machine learning.  
-    %%% New abstract, 
-    % Building on Probabilistic Dependency Graphs (PDGs)---a class of directed graphical models capable of representing inconsistent beliefs---
-    we present a generic algorithm for learning and approximate inference across a wide class of probabilistic models. Our algorithm is based on a simple epistemic principle: focus on a subset of variables and iteratively resolve inconsistencies using the parameters under control. This framework naturally unifies and generalizes a variety of existing methods, including the Expectation-Maximization (EM) algorithm, belief propagation, adversarial training, GANs, and GFlowNets. PDGs provide the underlying representational foundation, offering modularity, flexibility in incorporating new information, and a scoring function formalism that quantifies model-data incompatibility. Furthermore, PDGs generalize to  Bayesian Networks, factor graphs, and exponential family models, highlighting their expressive power in a broad range of machine learning scenarios.\end{abstract}
+We present a generic algorithm for learning and approximate inference with an intuitive epistemic interpretation: iteratively focus on a subset of the model and resolve inconsistencies using the parameters under control. This framework, which we call Local Inconsistency Resolution (LIR) is built upon Probabilistic Dependency Graphs (PDGs), which provide a flexible representational foundation capable of capturing inconsistent beliefs. We show how LIR unifies and generalizes a wide variety of important algorithms in the literature, including the Expectation-Maximization (EM) algorithm, belief propagation, adversarial training, GANs, and GFlowNets. Each of these methods can be recovered as a specific instance of LIR by choosing a procedure to direct focus (attention and control). We implement this algorithm for discrete PDGs and study its properties on synthetically generated PDGs, comparing its behavior to the global optimization semantics of the full PDG.
+\end{abstract}
 
 
 \section{Introduction}
+What causes one to change their mind, to learn, act, and draw inferences? 
+From a neurocognitive perspective, the mind operates by resolving internal inconsistencies, whether they arise from conflicting new information or from new awareness of contradictions among prior beliefs.
+Theories of cognitive dissonance \cite{festinger1962cognitive} famously explain much of human behavior as targeted adjustments to dispel the discomfort of psychological inconsistency. 
+% The brain continuously reconciles sensory inputs, prior beliefs, and predictions---an operation thought to underlie learning, perception, and planning. 
+Predictive coding theories \cite{rao1999predictive,friston2005theory} posit that discrepancies between expected and actual sensory inputs---known as prediction errors---are treated as inconsistency signals that drive learning via local adjustments to neural representation.
+% This principle is a recurring theme, from classic theories of cognitive dissonance to modern frameworks like predictive coding, which treats prediction errors as signals that drive learning via local adjustments.
+% A common theme  merges: cognitive work and adaptation are driven by a process of local inconsistency resolution.
+% We formalize this process in a graphical model.
+% 
+Inspired by this neurocognitive principle, we introduce a computational framework for local inconsistency resolution (LIR) in probabilistic models.
+\commentout{
+   %oli1: I think we can do better by slowing down and motivating using my material from below first
+    The key idea is simple: rather than resolving all inconsistencies in a belief system globally (which may be intractable), we iteratively identify and locally reduce inconsistency over a subset of variables using only parameters under direct control. This mirrors how both human cognition and neural systems operate under limited attention and bounded control, often correcting inconsistencies in one area while remaining unaware of or unable to act on others 
+   \todo{cite}.}
+% This paper introduces a computational framework formalizing the general principle of Local Inconsistency Resolution (LIR) in graphical models. 
 
-% Probabilistic models form the cornerstone of modern machine learning, providing structured ways to represent uncertainty and belief. However, real-world information is often inherently inconsistent, reflecting collecting beliefs or contradictory data. Addressing these inconsistencies systematically can enhance model reliability and generalization. 
+% In practice, this process is constrained by the limits of cognition.
+The locality---which comes in two flavors---is key for those of us with cognitive limitations.
+First, inconsistency can be difficult to detect, and 
+   % it cannot be constructively resolved without awareness. 
+   impossible to address constructively unless we are aware of it.
+A further complication is that one seldom has uniform control over one's epistemic state; 
+   we are reluctant to revise our direct observations or bedrock principles, forcing us to instead make adjustments to more pliable beliefs elsewhere.
+So in practice, we resolve inconsistencies \emph{locallly}---by looking at only a small part of the picture, and changing another small part of it.
+% TODO MOVEME
+This process isn't guaranteed to work: some inconsistencies simply cannot be seen with a narrow focus, and fixing one inconsistency can easily create others out of view.
+% This raises a profound question: how should you chose what to focus on?
+
+
+
+% Nevertheless, it is a useful 
+% It also poses a major question: how exactly should you chose what to focus on?
+
+% We introduce a computational framework that formalizes this process in probabilistic models, 
+   % which we call Local Inconsistency Resolution (LIR).
+% While this local approach has complexities---fixing one inconsistency can create others out of view---w
+% We will show that LIR provides a powerful recipe for learning and (approximate) inference and demonstrate that many foundational techniques in the literature arise naturally as instances of it.
 %
-%
-What causes one to change their mind? To learn, act, and draw inferences? 
-%Mandana's new intro material
-From a cognitive and neurosientific perspective, such mental operation often stem from detection and resolution of internal inconsistencies. The brain continuously reconciles sensory inputs, prior beliefs, and predictions—an operation though to underlie learning, perception, and planning. In predictive coding theories of the brain, for instance, discrepancies between expected and actual sensory inputs—known as prediction errors—are treated as inconsistency signals that drive learning via local adjustments to neural representation \todo{cite Friston 2005; Rao \& Ballard 1999}.
-
-Inspired by this  neurocognitive principle, we explore a computational framework for local insonsistency resolution (LIR) in probabilistic models.. The key idea is simple: rather than resolving all inconsistencies in a belief system globally (which may be intractable), we iteratively identify and locally reduce inconsistency over a subset of variables using only parameters under direct control. This mirrors how both human cognition and neural systems operate under limited attention and bounded control, often correcting inconsistencies in one area while remaining unaware of or unable to act on others\todo{cite}.
-We argue that all of these mental operations can be viewed as 
-attempts to mitigate or resolve internal inconsistency between one's beliefs. Sometimes this the result of discovering new information that contradicts our beliefs;
-other times it comes from new awareness of discrepancies between beliefs we already hold.
-%
-% The process is often a gradual one: inconsistencies are dealt with incrementally, and one at a time.
-% However, people do not change their minds all at once, keeping in mind everything they know;
-% However, it is impossible to respond to this inconsistency all at once, keeping in mind everything you know;
-% Indeed, we can only respond to the ones we are aware of, and inconsistencies can be difficult to detect.
-Inconsistency can be difficult to detect, however, and 
-   % can only be resolved once we are aware of it.
-   it is difficult to see how an inconsistency 
-       could be resolved (without massive collateral damage to one's belief state)
-       without becoming aware of it.
-% Further complicating things,
-% Typically
-% Further complicating our lives, some parts of the picture are beyond our control;
-A further complication is that some things may be beyond our control;
-   for example, we might receive conflicting information
-       from two trusted sources and be unable to  resolve
-       their disagreement.
-   % impossible to respond to this inconsistency all at once, keeping in mind everything you know;
-% So in practice, we resolve inconsistencies \emph{locallly}---little by little, and one at a time.
-So in practice, we resolve inconsistencies \emph{locallly}---%
-   by looking at only a small part of the picture,
-   and changing another part of it.
-   % ---little by little, and one at a time.
-This can have externalities; fixing one inconsistency can easily create others out of view.
-
-
-% Nevertheless, this process of locally resolving inconsistency can be quite useful.
-% Nevertheless,
-Despite its imperfections,
-   this process of locally resolving inconsistency can be quite useful.
-   % And, as we have formalized it in the probabilistic setting,
-   As we shall soon see,
-   it is a powerful recipe for learning and approximate inference.
-% In fact, we will show that it naturally captures a broad class of
-% We provide a formalization of it, which we use to show how
-%
-% We provide a formalization of this process, and show
-% We formalize the intuition above
-% We provide a formalization of this process
-We formalize the process
-   in the language of probability and
-   convex optimization,
-   and show how that many popular techniques in the literature
-   % can be viewed as local inconsistency resolution.
-   arise naturally as instances of it.
-   % Finally, we propse a new algorithm
-% We argue that this intuition applies not only to people, but also to a
-   % broad class of AI systems from the last 20 years.
-% This paper describes a general process by which this occurs,
-
+% We formalize the process in the language of probability and convex optimization,
+% and show how that many foundational techniques in the literature arise naturally as instances of it.
 % Historically, much of the belief revision literature has focused on
 % conflicts between propositions and entrenchment \cite{agm,...}.
 
 
 Our approach leans heavily on the theory of
 Probabilistic Dependency Graphs (PDGs), which are very flexible graphical
-   models that allow for arbitrary---even inconsistent---%
+   models that allow for arbitrary (even inconsistent)
    probabilistic information, weighted by confidence \cite{pdg-aaai}.
-% In addition, PDG semantics
 There is a natural way
 % information-theoretic way
    % of measuring the inconsistency of a PDG,
@@ -278,43 +246,27 @@ There is a natural way
    and many standard loss functions
    can be viewed as measuring the inconsistency of a PDG that
    describes the appropriate situation \cite{one-true-loss}.
-\vfull{
-   Recently, techniques have been developed to calculate this inconsistency
-   in polynomial time for bounded tree-width,
-   although it scales exponentially with the tree-width of the graph \cite{pdg-infer}.
-   As we move to variables that are continuous variables of large dimension,
-       it becomes intractable to calculate this global inconsistency
-       even for small graphs---the log evidence
-       of a latent variable model \cite{one-true-loss} can be
-       represented as a PDG inconsistency, for example.
-}
-% Our work
-% We provide an algorithm that
-%
-  % implicit when we regard inconsistency as a loss function,
-  % and generalizing it to training procedures other than .
-  % allowing us to describe details about the training process other than
-  % ``somehow minimize this global loss''.
-%
-% It can be intractable to calculate for .
-% Calculating the inconsistency of a PDG can be intractable.
-% Calculating a PDG's inconsistency can be intractable.
-% Our algorithm
-We introduce an algorithm
-   to operationalize
-   the process of adjusting parameters
-   to resolve this inconsistency.
+LIR operationalizes training models as
+   the process of adjusting parameters to resolve this inconsistency.
 
 % Calculating a PDG's inconsistency can be intractable.
 % In general, calculating a PDG's degree of inconsistency can be intractable.
-Computing a PDG's degree of inconsistency can be straightforward in some cases, but it is NP-hard in general \citep{pdg-infer}.
+% Computing a PDG's degree of inconsistency can be straightforward in some cases, but it is NP-hard in general \citep{pdg-infer}.
+Computing a PDG's degree of inconsistency is easy in some cases, 
+   but it is often intractable (e.g., the number of solutions to SAT problem and the log evidence
+   of a latent variable model can both be represented as PDG inconsistencies),
+   and is NP-hard in general. 
+% As shown by \citet{pdg-infer}, 
+The problem is equivalent to inference in PDGs, 
+   which, like for other graphical modes, 
+   can be achieved in polynomial time under the assumption of bounded tree-width \cite{pdg-infer}.   
 % \citet{one-true-loss} shows how variational inference can
 %     be understood as the adoption of extra beliefs to
 %     % overapproximate the overall inconsistency in a way that is easier to calculate.
 %     % in a tractable way.
 %     get an overapproximation that is easier to calculate.
 Variational inference \citep{blei2017variational,kingma2013autoencoding,jordan1999introduction} can be understood as
-   the practice adopting extra beliefs to
+   the practice of adopting extra beliefs to
    % overapproximate the overall inconsistency in a way that is easier to calculate.
    % in a tractable way.
    % overapproximate it in a way that is easier to calculate \cite{one-true-loss}.
@@ -323,52 +275,16 @@ Variational inference \citep{blei2017variational,kingma2013autoencoding,jordan19
 Our approach also enables the opposite:
 % This is one use of our algorithm,   but we also enable the opposite:
    focusing on small parts of the graph at a time to
-    % get
    address tractable under\-approximations of the global inconsistency.
-% We show how this
-% We show how this technique specializes and suggests a
-   % which ideally stil makes progress.
-% This has additional for parallelization.
-% Thus, it also has more potential for parallelization.
-Thus, it enjoys benefits such as higher potential for parallelization.
-
-Local Inconsistency Resolution (LIR) is very expressive.
-
-% Yet often, by placing additional confidence in some parts of the picture,
-% or restricting our attention to some small part of it, the inconsistency
-% can be calculated more easily.
-
-
-
-%% CALL FOR PAPERS WANTS:
-% Inference and generating methods for graphs, time series, text, video, and other structured modalities.
-% >> will present this in the case study?
 %
-% Unsupervised representation learning of high dimensional structured data.
-% >> a generic algorithm for representation learning:
-% >>    describe structure.  Invent or randomize variables + memory architecture.  Choose set of views,
-% >>    always including views and
-%
-% Scaling and accelerating inference and generative models on structured data.
-% Uncertainty quantification in AI systems.
-%
-% Thus, our work may be viewed in several lights.
-%     % - a very general probabilistic inference algorithm for structured data;
-% On one hand, it is a generic inference algorithm.
-%     - a broad class of natural optimizations for inference algorithms;
-%     - a generic way of learning
+Nevertheless, we will show that LIR provides a powerful recipe for learning and (approximate) inference and demonstrate that many foundational techniques in the literature arise naturally as instances of it.
 
 
-% Many algorithms can be cast in terms of locally minimizing inconsistency.
+% Thus, it enjoys benefits such as higher potential for parallelization.
+% Local Inconsistency Resolution (LIR) is very expressive.
 
 
-
-
-% \section{Background and Preliminaries}
-\section{Background, Preliminaries, and Parametric PDGs}
-
-% $\odot$ denotes pointwise multiplication.
-
+\section{Preliminaries and Parametric PDGs}
 % Each variable $X$ can take on values from a set $\V\!X$ of possible values.
 \textbf{Variables and Probability.}
 We write $\V\! X$ for the set of values that a (random) variable $X$ can take on,
@@ -459,82 +375,6 @@ A PDG is a
 % Equivalent variants of PDGs were defined by \citet{one-true-loss,pdg-infer};
 % we give another variant whose explicit parametric nature is useful for our purposes.
 We define an unweighted (but for our purposes, equivalent) variant whose explicit parametric nature will prove useful.
-% ---%
-   % yet it too is essentially equivalent to the others.
-% We give yet another variant
-% parametric variant of a PDG, which is essentially
-   % equivalent (see \cref{appendix:internalization})
-
-% \begin{definition}
-%     A PDG $\dg M \!=\! (\X\mskip-2mu, \Ar, \mathbb P, \balpha, \bbeta )$
-%     is a directed hypergraph
-%         $(\X\mskip-2mu, \Ar)$
-%     whose nodes correspond to
-%     variables,
-%     % together with
-%     % probabilities $\mathbb P$
-%     %     and
-%     %     confidence vectors
-%     %     $\balpha \!=\! [\alpha_a]_{a \in \Ar},\bbeta \!=\! [\beta_a]_{a \in \Ar}$,
-%     %     so that
-%     each arc
-%     % $\ed aST \in \Ar$
-%     $a \in \Ar$ of which is associated with:
-%     % arc $a \in \Ar$ is associated with:
-%
-%     \begin{itemize}[nosep,itemsep=2pt]
-%         \item (subsets of) variables $\Src a, \Tgt a \subset \X$, indicating the respective source and target variables of the edge;
-%         % For example,
-%         %     $$\Src L = \{A, B\} \ed L{}{} \{C\} = \Tgt L$$
-%         %  intuitively represents a joint dependence of $C$ on the variables $A$ and $B$;
-%         % \item A manifold $\Theta_a$ of parameters
-%         \item
-%         a conditional probability distribution
-%         {%\subafalse
-%             $\p_a(\Tgt a | \Src a)$},
-%         on the target variables given
-%         the values of the source variables,
-%         \item a weight
-%         $\beta_a \in \mathbb R \cup \{\infty\}$
-%         of confidence in
-%         the conditional probability distribution
-%         {%\subafalse
-%             $\p_a
-%             %(\Tgt a | \Src a)
-%             $},
-%         % \discard{(as measured by the number of independent observations that support $\p_a$), }
-%         and
-%         \item
-%         a weight $\smash{\alpha_a \in \mathbb R}$
-%         indicating
-%         confidence in the functional dependence of
-%         {%\subafalse
-%         $\Tgt a\mskip-2mu$ on $\Src a\mskip-2mu$}
-%         expressed by $a$.
-%         % \discard{
-%         % (as measured by the expected number of independent causal mechanisms corresponding to $a$,
-%         % that determine $\Tgt a$ given $\Src a$).%
-%         % }
-%     \end{itemize}
-%     % In aggregate, $\balpha = [\alpha_a]_{a \in \Ar}$ and $\bbeta = [\beta_a]_{a \in \Ar}$
-%     % are vectors over $\Ar$.
-% \end{definition}
-
-% We are particularly interested in PDGs whose cpds we can adjust smoothly.
-% In the present paper, we are particularly interested in PDGs whose cpds we can adjust smoothly.
-% To that end, we introduce the notion of a \emph{parametric PDG family}
-% $\dg P(\Theta)$,
-% which is defined the same way, except that each arc $a \in \Ar$ is also associated
-% with a manifold $\Theta_a$, and $\p_a$ not itself a cpd, but rather a map from $\Theta_a$ to cpds.
-% In other words, we have a cpd
-%     % $\p_a^{\theta_a}(\Tgt a | \Src a)$
-%     $\p_a(\Tgt a | \Src a; \theta_a)$
-%     for each $\theta_a \in \Theta_a$;
-%      % ison $\Tgt a$ given $\Src a$,
-% thus,
-% %
-% In addition, we require that there be a special default paramter setting $0_a \in \Theta_a$, such that $\p_a(\Tgt a | \Src a=s; 0_a) \propto \lambda_{\Tgt a}$, for every $s \in \V\Src a$.
-
 
 \begin{definition}
    % A \emph{parametric PDG family}
@@ -622,7 +462,6 @@ We define an unweighted (but for our purposes, equivalent) variant whose explici
    % We call a PDG \emph{unweighted} if $\balpha=\bbeta=\mat 1$.
    \qedhere
 \end{definition}
-% \vspace{-0.2ex}
 
 An unweighted PDG is the object obtained by fixing the parameters; thus,
 a
@@ -668,31 +507,11 @@ $\quad$and$\quad$ $q(A,B)$ \;as\;
    \node[above left=0pt and 0pt of center,inner sep=2pt]{$q$};
 \end{tikzpicture}\,.
 \end{center}
-%
-% By default, take $\beta,\alpha{=}1$.
-% Unless otherwise specified, take $\balpha = \bbeta = \mat 1$ by default---although the choice of $\balpha$ will matter only in \cref{sec:factor-graph}.
-   % , but we will sometimes specify ``high confidence''
-   % ($\beta{=}\infty$).
-\vfull{
-Given PDGs $\dg M_1$ and \vphantom{$\big|$}$\dg M_2$,
-   let denote $\dg M_1 + \dg M_2$ the PDG with their combined information, e.g., by taking the disjoint union of their arcs. 
-}
-% , or reweighting of a PDG's confidences.
-% % If $\psi \in \mathbb R^{2\Ar}$,
-% % If $\psi \in \mathbb R^{\Ar+ \Ar}$,
-% If $\psi \in \mathbb R^{\Ar}$,
-% we write $\psi \odot \dg M$ for the PDG $\dg M'$ re-weights $\bbeta$,
-%     multiplying by $\psi$ pointwise.
-%     %  i.e., $\beta_a' = \beta_a \psi_{0,a}$ and $\alpha_a' = \alpha_a\psi_{1,a}$.
-% We the same symbol for pointwise vector multiplication generally.
-% % \begin{itemize}[nosep,itemsep=2pt]
-% %     \item a space $\Theta_a$ of parameters, and a
-% % \end{itemize}
 
 It is not hard to see that a PDG can be faithfully viewed as the special case of a parametric PDG in which every 
 $\Theta_a = \{ \theta_0 \}$ is a singleton containing only the default value.
 Conversely, a parametric PDG may be viewed as a PDG by adding each $\Theta_a$ as an explicit variable.
-
+% \unskip\footnote{See \eqref{pdg:classfication}}
 
 % \paragraph{Semantics.}
 % What makes PDGs interesting are
@@ -732,14 +551,14 @@ $\mu$ satisfies the constraints imposed by every cpd of $\mathbb P$.
 % $\mu(Y|X) = \p_a$ for all 
 Intuitively, the cpds of $\mathbb P$ are inconsistent when constraints are not simultaneously satisfiable,
 in which case the \emph{observational inconsistency} $\aar{\dg M}_0 := \inf_\mu \OInc_{\dg M}(\mu)$ 
-turns out to be a particularly important measure the magnitude of the unavoidable internal conflict between the probabilistic data in $\dg M$.
+is an important measure the magnitude of the unavoidable internal conflict between the probabilistic data in $\dg M$.
 % turns out to be a particularly useful measure of the magnitude of the gap. 
 %
-%
+
 Modern machine learning has a tendency to prize observational data above all else, and in particular above structural informaion such as causal influence or qualitative independencies; for this reason, the scoring function $\OInc$ and the corresponding observational inconsistency $\aar{\dg M}_0$ will suffice for most of our examples. 
 % Moreover, it is possible 
-
-Nevertheless,
+%
+That said,
 we can also score $\mu$ by its incompatibility
 with the structural information in the weighted hypergraph $(\Ar,\balpha)$.
 This \emph{structural deficiency} is given by:%
@@ -789,32 +608,7 @@ If $\Ar$ is a qualitative Bayesian Network and $\balpha = \mat 1$, for instance,
 % % for further details, examples, and motivation.
 % for more details, motivation, and examples.
 % We encourage the reader to consult previous work for further details.
-
-% that if $\Ar$ has the structure of $\SDef_{\!\dg M}(\mu) > 0$
-% which itself has a confidence $\gamma$,
-
-
-% \begin{align*}
-%     \bbr{\dg M}_\gamma&(\mu)
-%         := \OInc_{\dg M}(\mu) + \gamma \, \SInc_{\dg M}(\mu)
-%             \numberthis\label{eqn:scoring-fn} \\[-0.2ex]
-%         % =& \Ex_{\mu}\left[\, \sum_{L \in \Ed} \log \frac
-%         %     {\mu(\Tgt L| \Src L)^{\beta\ssub L - \gamma \alpha \ssub L}}
-%         %     {p\ssub L(\Tgt L | \Src L)^{\beta \ssub L}}
-%         % \right] - \gamma \H(\mu)
-%         &= \Ex\nolimits_{\mu}\bigg[
-%             \,
-%             % \gamma \log \mu(\X) +
-%             % \sum_{a \in \Ar}
-%             \sum_{\ed aST \mathrlap{\, \in \Ar}} \subafalse
-%             % \sum_{a,S,T,\alpha,\beta,p \in \hat{\dg M}} \subafalse
-%                 % \let\plainbeta\beta \def\beta_a{\plainbeta} \let\plainalpha\alpha\def\alpha_a{\plainalpha} \def\p_a{p}
-%             \log \frac
-%             {\mu(\Tgt a| \Src a)^{\beta_a - \gamma \alpha_a}}
-%             {\p_a(\Tgt a | \Src a)^{\beta_a}}
-%         \bigg] - \gamma \H(\mu)
-% \end{align*}
-
+%
 With confidence $\gamma \ge 0$ in the structural information overall,
 the $\gamma$-\emph{inconsistency} of $\dg M$ is the smallest possible overall incompatibility of any distribution with $\dg M$, and denoted
 % \vskip-1ex
@@ -833,7 +627,7 @@ It follows that, at least at an abstract level,
    much of machine learning can be viewed as inconsistency resolution.
 %
 % We take this idea one step further, operationalizing the resolution process.
-We take this idea a few steps further, by operationalizing the
+We now take this idea a few steps further, by operationalizing the
    resolution process,
    % and making it even more expressive with an approximate, local variant
    and allowing it to be done ``locally''.
@@ -850,32 +644,9 @@ We take this idea a few steps further, by operationalizing the
    % of an algorithm we call \emph{local inconsistency resolution}.
 But what exactly do we mean by that?
 
-\vfull{
-PDG inference is fixed-parameter tractable:
-assuming a graph with bounded tree-width, the  can be computed in polynomial time.
-and it appears that \cite{pdg-infer}.
-Several important algorithms can alredy be seen as inconsistency reduction.
-When viewed as a graphical model}
-
-% A surprisingly broad class of algorithms already
-% \begin{itemize}
-%     [nosep]
-%     \item Belief updating (Conditioning, Jeffrey's rule)
-% \end{itemize}
-% However, global inference
-
-
-
 
 \section{The Local Inconsistency Resolution (LIR) Algorithm}
-% Two knobs to control the model. The first one controls what you're looking at and what you get to change.
-% We now describe the local inconsistency reduction algorithm.
-% There are two distinct senses in which inconsistency resolution can be done locally:
-%     we can either restrict how much we can see, or how much we can do.
-% There are two distinct senses in which inconsistency can be resolved locally:
-%     we can restrict what we can see, or what we can do.
-% There are two aspects of resolving inconsistency: what
-% We can either
+
 There are two distinct senses in which inconsistency resolution can
    be \emph{local}: we can restrict what we can see, or what we can do about it.
 Correspondingly, there are two ``focus'' knobs for our algorithm:
@@ -887,26 +658,7 @@ Correspondingly, there are two ``focus'' knobs for our algorithm:
     % \subseteq \Ar$
     \subseteq \Ar$
      as we resolve that inconsistency.
-% \begin{enumerate}[label=(\alph*)]
-% (a)
-% \item
-   % restrict our attention to a subset $A \subseteq \Ar$ of arcs,
-   % restrict our attention to the inconsistency of a subset of arcs $A \subseteq \Ar$,
-   %     % trying to reduce inconsistency of the sub-PDG,
-   %     or
-   %     % taking a the inconsistency of a
-   %     \label{item:attn-restrict}
-   % % (b)
-   % % \item
-   %     restrict our control to the parameters
-   %     % $\Theta_C := \prod_{a \in C}\Theta_a$ of a subset $C \subseteq \Ar$ of arcs.
-   %     of arcs $C \subseteq \Ar$.
-   %     \label{item:ctrl-restrict}
-% \end{enumerate}
-% In the first case,
-% Both make the problem more tractible.
-% Restricting attention \ref{item:attn-restrict}
-% In other words,
+%
 The former makes for an underestimate of the inconsistency that is easier to calculate, while
 % restricting control \ref{item:ctrl-restrict}
 the latter
@@ -947,47 +699,13 @@ In full generality, we refine the types of $\varphi$ and $\chi$ one step further
 The behavior of the attention mask $\varphi$ described in the previous paragraph matches the role played by $\balpha$ and $\bbeta$ in PDG semantics---which why we needed only to define unweighted PDGs as our basic objects, but require weighted semantics for them.
 The parameter $\gamma$ also describes a form of attention, to the overall qualitative information in the network. Thus we take our control mask $\varphi = (\balpha,\bbeta,\gamma)$ to be a vector of dimension $2|\Ar|+1$, 
 and write $\aar{\varphi \odot \dg M} := \aar{\dg M,\balpha,\bbeta}_\gamma$ to denote the $\gamma$-inconsistency of the weighted PDG $(\dg M, \balpha,\bbeta)$. 
-Because we will typically set $\gamma=0$, rendering $\balpha$ irrelevant (except in \cref{sec:factor-graph} where $\gamma=1$ and $\balpha=\bbeta$), we assume that $\balpha = \bbeta$ unless otherwise specified. 
+Because we will typically set $\gamma=0$, rendering $\balpha$ irrelevant (except in \cref{sec:factor-graph} where $\gamma=1$ and $\balpha=\bbeta$), we assume that
+ $\balpha = \bbeta = 1$ unless otherwise specified. 
 % and write $\varphi(a) = 1$ for $\alpha_a = \beta_a = 1$. 
 We also allow $\chi(a)$ to be a vector of dimension $\dim \Theta_a$, so overall $\chi$ is a vector of dimension $\sum_{a \in \Ar} \dim \Theta_a$.
 %
 % A few of our most bizarre examples require that $\varphi$ and $\chi$ to depend on $\theta$.
 
-
-% At a high level, the algorithm proceeds as follows.
-% The full algorithm, formalized in \cref{algo:LIR},
-The full procedure,
-   formalized in \cref{algo:LIR},
-   is a heuristic algorithm that adjusts the parameters of a parametric PDG $\MThetadense$
-   as to locally resolve inconsistencies as follows.
-First, 
-% receive context PDG $\Ctx$ and 
-% initialize mutable memory $\MThetadense$.
-accept a belief state in the form of a parametric PDG $\dg M(\Theta)$ and initialize the parameters to their default values.
-   % a PPDG that whose parameters we will be changing to reduce its inconsistency with $\Ctx$.
-%In each iteration, choose $\gamma$, a control mask $\chi$ over $\MThetadense$, and an attention mask $\varphi$ over $\MThetadense$ and $\Ctx$.
-In each iteration, choose \emph{focus} consisting of an attention mask $\varphi = (\balpha,\bbeta,\gamma)$ and a control mask $\chi$.
-%
-% Use methods of \citet{pdg-infer} to calculate
-Calculate
-% the inconsistency of $\varphi\odot(\dg M(\Theta) + \Ctx)$,
-$\aar{\varphi\odot\MThetadense}_\gamma$, the inconsistency of
-   the combined context and memory, weighted by attention.
-In many cases (e.g., when $\bbeta \ge \gamma\balpha$) these problems can be solved with techniques in conic optimization \citep{pdg-infer},
-   but this may be intractable unless the attention is narrow enough or one can find a formula for it in closed form.
-Finally, mitigate this local inconsistency
-   by updating mutable memory via (an approximation to) gradient flow,
-   changing the parameters associated with $a$ in proportion to the degree of control $\chi(a)$.
-       % context and memory $\Ctx + \dg M(\theta)$
-% This procedure is fully formalized in \cref{algo:LIR}.
-% This is formalized in \cref{algo:LIR}.
-
-% To describe the algorithm formally in full generality, we also need to des
-% If $\dg M(\Theta)$ is a parametric PDG family, then we write
-% $\dg M.\Ar$
-% $\Ar(\dg M)$
-% for the set of arcs in the underlying PDG, and
-% $\dg M.\boldsymbol\theta$
 
 \begin{algorithm}
    \caption{Local Inconsistency Resolution (LIR)}
@@ -1036,14 +754,50 @@ Finally, mitigate this local inconsistency
    % But if $\varphi : \Ar(\dg M) \to \mathbb R$, they're not overlapping, and $\chi,\varphi: \mathbb R^{\Ar(\dg M)}$ look more like ``duals''.
    % Of course, we can't then eliminate the refresh instruction.  I also don't like the interpretation as much: if your focus changes in a static environment, I want that to be reflected in $\varphi$, not changing context.
 \end{algorithm}
+
+% At a high level, the algorithm proceeds as follows.
+% The full algorithm, formalized in \cref{algo:LIR},
+The full procedure,
+   formalized in \cref{algo:LIR},
+   is a heuristic algorithm that adjusts the parameters of a parametric PDG $\MThetadense$
+   as to locally resolve inconsistencies as follows.
+First, 
+% receive context PDG $\Ctx$ and 
+% initialize mutable memory $\MThetadense$.
+accept a belief state in the form of a parametric PDG $\dg M(\Theta)$ and initialize the parameters to their default values.
+   % a PPDG that whose parameters we will be changing to reduce its inconsistency with $\Ctx$.
+%In each iteration, choose $\gamma$, a control mask $\chi$ over $\MThetadense$, and an attention mask $\varphi$ over $\MThetadense$ and $\Ctx$.
+In each iteration, choose \emph{focus} consisting of an attention mask $\varphi = (\balpha,\bbeta,\gamma)$ and a control mask $\chi$.
+%
+% Use methods of \citet{pdg-infer} to calculate
+Calculate
+% the inconsistency of $\varphi\odot(\dg M(\Theta) + \Ctx)$,
+$\aar{\varphi\odot\MThetadense}_\gamma$, the inconsistency of
+   the combined context and memory, weighted by attention.
+In many cases (e.g., when $\bbeta \ge \gamma\balpha$) these problems can be solved with techniques in conic optimization \citep{pdg-infer},
+   but this may be intractable unless the attention is narrow enough or one can find a formula for it in closed form.
+Finally, mitigate this local inconsistency
+   by updating mutable memory via (an approximation to) gradient flow,
+   changing the parameters associated with $a$ in proportion to the degree of control $\chi(a)$.
+       % context and memory $\Ctx + \dg M(\theta)$
+% This procedure is fully formalized in \cref{algo:LIR}.
+% This is formalized in \cref{algo:LIR}.
+
+% To describe the algorithm formally in full generality, we also need to des
+% If $\dg M(\Theta)$ is a parametric PDG family, then we write
+% $\dg M.\Ar$
+% $\Ar(\dg M)$
+% for the set of arcs in the underlying PDG, and
+% $\dg M.\boldsymbol\theta$
+
 Before we can run \cref{algo:LIR}
-we 
+we must select the procedure 
 % we must supply two more procedures:
 % \textsc{Refresh}, to get new context in online settings (the identity by default), and
-\textsc{Refocus}, to select attention and control masks.
+\textsc{Refocus} that provides attention and control masks.
 % Different choices result in different algorithms;
    % for our purposes,
-We focus on the case where \textsc{Refocus}
+We focus primarily on the case where \textsc{Refocus}
    chooses non-deterministically
    from a fixed finite set of attention-control mask pairs $\mathbf{F}
    = \{ (\varphi_i,\chi_i) \}_{i=1}^n
@@ -1071,7 +825,7 @@ the final line to reduce to
 at least in many cases of interest. 
 For example:
 
-\begin{linked}{proposition}{logccave}
+\begin{linked}{prop}{logccave}
    % If $\mathbb P$ is log-concave, then
    If $\dg M(\Theta)$ is an unweighted parametric PDG whose parameterizations
    $\mathbb P$ are either constant or unconditional and log-concave and
@@ -1094,38 +848,9 @@ To our surprise (and contradicting a prior version of this paper), we have found
 In the remaining sections, we give a sample of
 some historically important algorithms that are instances of LIR.
 
-% We now consider some special cases of \cref{algo:LIR}.
+\section{Unifying Classical Algorithms as Instances of LIR}
+\subsection{The Classification Setting}
 
-%%%%%
-% If $\Ctx$ is a PDG with variables $\X$,
-% and our memory $\dg M$ contains a single joint distribution $\mu(\X)$
-% then $\textsc{LIR}(\Ctx, \dg M, \gamma)$ equals $\bbr{\Ctx}^*_\gamma$, the optimal distribution
-%%%%%
-% If $\Ctx$ is a PDG with discrete variables $\X$,
-% $\dg M(\Theta)$ consists of a single joint distribution $\mu(\X)$
-%     parameterized as a vector $[0,1]^{\V\!\X}$,
-% and \textsc{Refocus} always produces constant $\chi,\gamma$,
-% then $\textsc{LIR}(\Ctx, \dg M)$ equals $\bbr{\chi\odot\Ctx}^*_\gamma$,
-% the optimal distribution, albeit in a roundabout manner.
-%%%%%
-\vfull{
-   If $\dg M$ is a PDG with discrete variables $\X$
-   and we regard $\mu(X)$
-   $\dg M(\Theta)$ consists of a single joint distribution $\mu(\X)$
-       parameterized as a vector $[0,1]^{\V\!\X}$,
-   and \textsc{Refocus} always produces constant $\chi,\gamma$,
-   then $\textsc{LIR}(\Ctx, \dg M)$ equals $\bbr{\chi\odot\Ctx}^*_\gamma$,
-   the optimal distribution, albeit in a roundabout manner.
-   }
-% in which (i.e., every $A_t = \Ar$) amounts to \emph{global} inconsistency reduction, i.e.,
-% the universal training objective of \cite{one-true-loss}. which is \#P-hard.
-% In this case, supposing $\bbeta \ge 0$,
-% then the global inconsitency $\aar{\dg M}
-% $ can only decrease in time
-% It is worth noting that LIR does not always converge.
-
-% \section{Warmup: Control in a Classification Setting}
-\section{LIR in the Classification Setting}
 Consider a parametric classifier $p_\theta(Y|X)$, perhaps
    arising from a neural network whose final layer is a softmax,
    and suppose we also have a labeled example $(x,y)$. 
@@ -1142,7 +867,7 @@ $\smash{
 % Together with a labeled sample $(x,y)$,
 %  and parameter setting $\theta$,
 Combining the parametric classifier $p_\theta(Y|X)$ with the sample $(x,y)$,
-   we get a parametric PDG
+   we get a parametric PDG $\dg M(x,y,\theta) := $
 %
 % \[ %%%>>  EXPLICIT PARAMTERIZATION; THETA IS A VARIABLE  <<%%
 %     \dg M := ~~
@@ -1159,7 +884,7 @@ Combining the parametric classifier $p_\theta(Y|X)$ with the sample $(x,y)$,
 % \]
 \begin{equation}
 % $
-   \dg M(x,y,\theta) := \;
+   \;
    \begin{tikzpicture}[baseline=-0.6ex]
        % \node[dpad1] (X) at (0,0) {$X$};
        % \node[dpad1] (Y) at (1.5,0) {$Y$};
@@ -1204,7 +929,7 @@ Each cpd plays major role in this inconsistency.
 What happens when we resolve this it
 with control over different arcs?
 
-\begin{itemize}[nosep,itemsep=3pt, left=2em]
+\begin{itemize}[nosep,itemsep=3pt, left=0.5em]
    \item Adjusting $\theta$
    % (i.e, $C = \{\theta\}$)
    amounts to \textbf{training} the network in the standard way.
@@ -1248,7 +973,7 @@ becomes striking (see \cref{fig:adv}, right).
 
 
 
-With minor modifications to $\dg M(x,y,\theta)$, we can capture standard procedures that are more common in the training process.
+With minor modifications to $\dg M(x,y,\theta)$, we can capture variations of training procedures.
 
 % \textbf{classification}
 % Furthermore, these .
@@ -1258,7 +983,7 @@ With minor modifications to $\dg M(x,y,\theta)$, we can capture standard procedu
 % Take mutable memory to also include a special arc $\ed {\mathit{adex}}{}X$,
 % and that is the focus
 % \textbf{A more realistic classification setting.}
-\textbf{Stochastic Gradient Descent.} \label{sec:SGD}
+\textbf{Stochastic Gradient Descent (SGD).} \label{sec:SGD}
 Take the mutable state to be the classifier $p$ as before.
 Define $\textsc{Refresh}$ so that it draws a batch of samples $\{(x_i,y_i)\}_{i=1}^m$,
 and returns a PDG with a single arc describing their emperical distribution $d(X,Y)$, and
@@ -1267,7 +992,7 @@ and returns a PDG with a single arc describing their emperical distribution $d(X
 let $\textsc{Refocus}$ be such that $\varphi(d) = \infty$
    (reflecting high confidence in the data).
 If $\eta := \chi(p) \varphi(p)$ is small, then
-   LIR reduces to stochastic gradient descent with batch size $m$ and learning rate $\eta$.
+   LIR reduces to SGD with batch size $m$ and learning rate $\eta$.
 
 
 % \textbf{Adversarial training views.}
@@ -1433,14 +1158,13 @@ Thus, it is just as sensible to train the inputs, as the network \cite{FNNS}.
 % \]
 
 
-% \section{The EM Algorithm (and VI) as LIR}
-% \section{The EM Algorithm and Variational Inference as LIR}
-\section{The EM Algorithm as LIR}
-Suppose we have a generative model $p(Z,X | \Theta)$
-describing the probability over an observable variable $X$ and a latent one $Z$.
+\subsection{The EM Algorithm and VAEs}
+
+Suppose we have a latent variable model $p_\theta(Z,X)$
+describing the joint distribution of an observable variable $X$ and a latent one $Z$.
 % Let $x$ be an observation of $X$, as before.
 %
-Given an observation $X{=}x$,
+Given observations of the form $X{=}x$,
 how can we learn model parameters $\theta$ despite the missing data $z$?
 There is an overwhelmingly standard answer that has independently arisen in many different domains:
 the EM algorithm \citep{dempster1977maximum,mclachlan2008algorithm}.
@@ -1478,7 +1202,7 @@ altogether this amounts to computing:
 %     \end{tikzpicture}
 % \]
 
-\begin{linked}{proposition}{LIR}
+\begin{linked}{prop}{LIR-EM}
    % If there are no local minima,
    % If $\theta \mapsto p_\theta(x,Z)$ is log-convex,
    %  then
@@ -1511,9 +1235,10 @@ altogether this amounts to computing:
    % $\chi = \infty \mathbbm1_{\{\theta\}}$ and $\mathbbm1_{\{q\}}$
    full control of $p$ and $q$
    implements EM, in that
-   $\theta_{\text{EM}}^{(t)} = \theta_{\text{LIR}}^{(2t)}$
+   $\theta_{\text{EM}}^{(t)} = \theta_{\text{LIR}}^{(2t)}$%
    % for all $t \in \mathbb N$
-   .
+   .%
+   \onlyfirsttime{\footnote{The result can also be readily adapted to an entire dataset by replacing $x$ with a high confidence empirical distribution, or mini-batched as in \cref{sec:SGD}.}}
    % $ \theta^{(t+1)}
 \end{linked}
 
@@ -1522,32 +1247,28 @@ altogether this amounts to computing:
 % A result like this was first observed by
 This result is closely related to one due to
 % This result is a close relative of a due to
-\citet{neal1998view},
-who view it as an intuitive explanation of why the EM
-algorithm works.  Indeed, it is obvious in this form that
-every adjustement reduces the overall inconsistency.
-The result can also be readily adapted to an entire dataset by replacing $x$ with a high confidence emperical distribution, or batched with the same technique in \cref{sec:SGD}.
+\citet{neal1998view}, who view it as an intuitive explanation of why the EM algorithm works.  Indeed, it is obvious in this form that every adjustment reduces the overall inconsistency, and that
 % It also captures fractional EM when $\chi < \infty$.
-When the M step does not fully solve the maximization problem, but merely makes a 
+the M step need not fully solve the maximization problem, but merely make progress.
 % (\citeyear{neal1998view})
 % By monotonicity, it is also clear that
 
 \paragraph{Variational inference as LIR.}
 This form of the EM algorithm is closely related to variational inference.
-Indeed, analogous choices applied to the analysis of \citet{one-true-loss}
+Indeed, the inconsistency of the PDG in \cref{prop:LIR-EM} is equal to the evidence lower bound (ELBO), the optimization target for variational methods.
+Furthermore, allowing $q$ to depend on $x$ 
+% analogous choices applied to the analysis of \citet{one-true-loss}
 % to obtain a concrete training algorithm for variational autoencoders.
-yields the usual training algorithm for variational autoencoders (VAEs). Using our language, a VAE is 
+and breaking up $p(X,Z) = p(Z)d(X|Z)$ into two separate arcs yields a PDG containing the data of a variational autoencoder, or VAE \cite{kingma2013autoencoding}, and the resulting inconsistency is the variant of the ELBO used to train VAEs \cite{one-true-loss}.  It follows that LIR where we control the encoder and decoder (but not the prior) and attend to various mini-batches of samples, trains a VAE with stochastic gradient descent. 
+%
+\emph{Mean-field} variational methods are ones where the latents $Z = (Z_i)_{i=1}^n$ are real-valude, and the variational family is restricted to those of the form $q(Z) = \prod_{i=1}^n q_i(Z)$.
 
 
-\emph{Mean-field} variational methods are the ones that  
-
-
-\section{Generative Adversarial Training as LIR}
+\subsection{Generative Adversarial Networks}
 \def\pdata{p_{\mathrm{data}}}
 \def\real{{\mathrm{real}}}
 \def\fake{{\mathrm{fake}}}
-LIR also subsumes more complex training procedures such as the one used to train
-Generative Adversarial Networks, or GANs \cite{goodfellow2020generative}.
+LIR can also capture the procedure for training Generative Adversarial Networks, or GANs \cite{goodfellow2020generative}.
 % The general idea is that
 The goal is to train a generator network $G$ to generate images that cannot be distinguished
    from real ones.
@@ -1592,15 +1313,15 @@ All of these pieces of probabilistic information can be summarized by the PDG be
        % \draw[arr] (X.0) to[out=0,in=-80,looseness=1.6] node[right]{$D$} (C.-35);
        % \draw[arr] (X.10) to[out=10,in=-90,looseness=1.4] node[left]{$\frac12$} (C.-45);
        %%%%%%%%%%%%%%%%%%%%%%%%%%%%% D %%%%%%%%%%%%%%%%%%
-       % \draw[arr,-,line width=1.3pt,transform canvas={xshift=1pt}, Dcolor,dashed]
-       %            (X.-2) to[out=0,in=-20,looseness=2.21] (C.-28);
+       \draw[arr,-,line width=1.3pt,transform canvas={xshift=1pt}, Dcolor,dashed]
+                  (X.-2) to[out=0,in=-20,looseness=2.21] (C.-28);
        \draw[arr] (X.0) to[out=0,in=-20,looseness=2.2] node[right]{$D$} (C.-30);
        % \draw[arr] (X.10) to[out=10,in=-45,looseness=1.6] node[left]{$\frac12$} (C.-45);
        %%%%%%%%%%%%%%%%%%%%%%%%%%% e %%%%%%%%%%%%%%%%%%%%
-       % \draw[arr1,-,line width=1.1pt,transform canvas={xshift=0.5pt}, Gcolor,shorten >=3pt]
-       %     (X.10) to[out=10,in=-55,looseness=1.6] (C.-50);
-       % \draw[arr1,-,line width=1.1pt,transform canvas={xshift=-0.8pt}, Dcolor,shorten >=3pt,shorten <=1pt]
-       %     (X.10) to[out=10,in=-55,looseness=1.6] (C.-50);
+       \draw[arr1,-,line width=1.1pt,transform canvas={xshift=0.5pt}, Gcolor,shorten >=3pt]
+           (X.10) to[out=10,in=-55,looseness=1.6] (C.-50);
+       \draw[arr1,-,line width=1.1pt,transform canvas={xshift=-0.8pt}, Dcolor,shorten >=3pt,shorten <=1pt]
+           (X.10) to[out=10,in=-55,looseness=1.6] (C.-50);
        \draw[arr1]
            % (X)
            (X.10)
@@ -1660,7 +1381,8 @@ then the inconsistency becomes $+\mathcal L^{\text{GAN}}$.
 
 Standard practice is to use small $\chi(G)$ and large $\chi(D)$.
 
-\section{Message Passing Algorithms as LIR}
+
+\subsection{Message Passing}
    \label{sec:factor-graph}
 
 % \paragraph{Belief Propogation.}
@@ -1693,7 +1415,7 @@ corresponds to a PDG
 \]
 % ~\parbox{0.45\linewidth}{
 % \!\!
-that specifies the same distribution $\Pr_\Phi(\X)$ when $\gamma=1$.
+that specifies the same distribution $\Pr_\Phi(\X)$ when $\gamma{=}1$.
 % }
 % be the corresponding PDG.
 % There are several different variants of beleif propogation;
@@ -1929,7 +1651,7 @@ $
 $.
 
 % Thus, for any schedule of messages
-\begin{linked}{proposition}{bp}
+\begin{linked}{prop}{bp}
    If {\sc Refocus} selects a focus non-deterministically from
    $\{ a\sto\mskip-2mu X, X\! \sto a, X\}_{X \in \X, a \in \partial X}$
    (see illustration above; details in \cref{sec:bp-details}), then
@@ -1979,35 +1701,51 @@ The same construction works for general cluster graphs,
 % What makes this tractable, however, is that
 
 
-\section{Transformer Layers as LIR}
 
-(Decoder-only) transformers \cite{TODO:Vaswani17} is an important development that has become the basis of modern language models.
+\subsection{Transformer Layers}
+
+
+The key innovation of the transformer architecture \cite{vaswani2017attention}, the basis of modern language models, 
 % , in part because they do not have (arguably unstable) recurrances. 
-The key innovation is that of (scaled dot-product) (masked) \emph{self-attention}, which it turns out can be viewed as an instance of what we are calling attention.
+% The key innovation 
+is that of (scaled dot-product) (masked) \emph{self-attention}.
+%  which it turns out can be viewed as an instance of what we are calling attention.
+% It turns out that this too can be viewed as an instance of our framework.
+% Intuitively, it makes the model explicitly choose to focus on some parts of the input over others. 
+This notion of attention can be viewed as an instance of our framework.
 
 Suppose that we are looking at a sequence of tokens $n$, whose current representations at some layer of the model are the vectors $x_1, \ldots, x_n \in \mathbb R^d$. 
-Let $x'_1, \ldots x'_n$ denote the transformed representations of these tokens. 
+The transformation is paramterized by three matricies $W_K, W_Q, W_V \in \mathbb R^{d \times d}$, 
+that generate key $k_i = W_K x_i$, query $q_i = W_Q x_i$, and value $v_i = W_V x_i$ representation vectors of each $x_i$.
+The result of the transformation are the processed vectors  $x'_1, \ldots x'_n$
+%  denote the transformed representations of these tokens. 
+where $x_j' = \sum_{i=1}^n \alpha_{i|j} v_i$, and $\alpha_{i|j} = \mathrm{softmax}_i( \langle k_i, q_j \rangle)$.
+
 
 Consider a PDG with variables $\mathcal X = \{ X_i \}_{i=1}^n \cup \{ X'_i\}_{i=1}^n$. 
-We now construct a bipartite graph, with $n^2 + 2n$ arcs; for each $(i,j) \in [n]^2$, 
-we have an arc 
+We start with a bipartite graph: for each $(i,j) \in [n]^2$, 
+we add an arc 
 % $a_{ij} \in \Ar$ 
-with cpd $\p_{ij} = \mathcal N(X'_j \mid V_i, 1)$.
-If the cpd has attention $\varphi(ij) = \exp \langle q_j, k_i\rangle$.
+with isotropic Gaussian cpd $\p_{ij} = \mathcal N(X'_j \mid v_i, I)$; finally, 
+   add two additional arcs specifying the joint values of $x$ and $x'$.
+If the cpd has attention $\varphi(ij) = \exp \langle k_i, q_j\rangle$.
+
+
 
 \begin{center}
+   $\dg M(K,Q,V,x,x') := $
    \def\vdotsmall{\rotatebox{90}{$\cdot{\cdot}\cdot$}}
-   \begin{tikzpicture}
+   \begin{tikzpicture}[center base]
       \node[dpad1] (X1) at (0, 3)  {$X_1$};
-      \node             at (0, 2.5) {\vdotsmall};
-      \node[dpad1] (Xi) at (0, 2)  {$X_i$};
-      \node             at (0, 1)  {\vdotsmall};
+      \node             at (0, 2.4) {\vdotsmall};
+      \node[dpad1,draw=black] (Xi) at (0, 1.8)  {$X_i$};
+      \node             at (0, 0.9)  {\vdotsmall};
       \node[dpad1] (Xn) at (0, 0)  {$X_n$};
       %
       \node[dpad1] (X1p) at (2, 3)  {$X'_1$};
-      \node              at (2, 2)  {\vdotsmall};
-      \node[dpad1] (Xjp) at (2, 1)  {$X'_j$};
-      \node              at (2, 0.5) {\vdotsmall};
+      \node              at (2, 2.1)  {\vdotsmall};
+      \node[dpad1,draw=black] (Xjp) at (2, 1.2)  {$X'_j$};
+      \node              at (2, 0.6) {\vdotsmall};
       \node[dpad1] (Xnp) at (2, 0)  {$X'_n$};
       
       \begin{scope}[{arr2,thin,gray}]
@@ -2021,103 +1759,66 @@ If the cpd has attention $\varphi(ij) = \exp \langle q_j, k_i\rangle$.
       \draw[] (Xn) to (Xjp);
       \draw[] (Xn) to (Xnp);
       \end{scope}
-      \draw[arr2] (Xi) to (Xjp); 
+      \draw[arr2] (Xi) to node[inner sep=2pt,fill=white]{$\p_{ij}$} (Xjp); 
+      
+      % draw x and x'
+      \node at (-1,3.4) {$x$};
+      \node at (3,3.4) {$x'$};
+      \begin{scope}[arr2, ->>, shorten <=0pt]
+         \draw[] (-0.8,3.5) -- (-0.8, 0) -- (Xn);
+         \draw[] (-0.8,3) -- (X1);
+         \draw[] (-0.8,1.8) -- (Xi);
+
+         \draw[] (2.8,3.5) -- (2.8, 0) -- (Xnp);
+         \draw[] (2.8,3) -- (X1p);
+         \draw[] (2.8,1.2) -- (Xjp);
+      \end{scope}
    \end{tikzpicture}
 \end{center}
 
 
+\begin{prop}
+   LIR($\dg M$) in which attention is set to $\varphi_{ij} = \exp \langle k_i, q_j \rangle$, when controlling $x'$, leads to inference in the transformer layer, i.e., 
+   % $x_j' = \sum_i \alpha_{i|j} V x_i$ where $\alpha_{i|j} = \mathrm{Softmax}(x_j KQ^{\sf T} x_i / \sqrt{d})$.
+   $x_j' = \sum_i
+   %  \Big( \exp(x_j KQ^{\sf T} x_i) / \sum_{i'} \exp(x_j KQ^{\sf T} x_{i'}) \Big)
+      \alpha_{i|j}
+     v_i$.
+\end{prop}
+
+Notably, this model forces softmax normalization to be row-wise. 
+Controlling the parameters $K,Q,V$ trains the layer, in a sense, but we still do not know whether or not this is equivalent to the standard way of training. 
 
 
+\subsection{Generative Flow Networks}
+
+\todo{this is the last subsection that needs a major rework; I've removed it for now.}
 
 
-
-\section{GFlowNet Training as LIR}
-
-
-Generative Flow Networks, or GFlowNets~\cite{gflownet}, are probabilistic generative models that aim to sample from a distribution that is given in the form of unnormalized probabilities, referred to as rewards and denoted by $R$. The sample is constructed by sequentially modifying an initial sample via a prescribed set of actions $\mathcal{A}$. Let $S_t$ denote the random variable corresponding to the state of the sample after $t$ modifications. The effect of actions on states can be represented as Directed Acyclic Graph (DAG). 
-Different objectives have been used to train GFlowNets, but each is an attempt to enforce flow-balancing conditions (e.g., conservation of flow, detailed balance, trajectory balance) along the DAG of the generative process. For illustration, we analyze the trajectory balance (TB) objective:
-\[
-\mathcal{L}^\mathrm{TB} = \Ex_{s \sim Q}\left[ \log^2\left( \frac{\prod_i P_F(s_{i+1} \mid s_i)}{\prod_i P_B(s_i \mid s_{i+1})} \right) \right]
-\]
-where, by definition, $P_B(s_n | s_{n+1}) = R(s_n)$
-% \mehran{I think different losses have been used for GFNs. Which paper are we following? Should there be a product inside the log or a sum outside instead, i.e., a loss that is applied for each edge separately?}
-% \oliver{the TB and subTB losses seem, which are closest to what is written here, seem to be most used in practice. The product inside is the standard way to write it.} \mehran{Reward is missing from the loss function...} \oliver{true; normally you'd also put $R(x)$ in the denominator and $F(s_0)$ in the numerator, but neither has an obvious probabilistic interpretation so let's revisit this later.}
-
-The probabilistic dependency graph of a GFlowNet can be depicted as follows:
-\[
-\begin{tikzpicture}
-   % Nodes S_0, S_1, ..., S_n
-   \node[dpad1] (S0) {$S_0$};
-   \node[dpad1] (S1) [right=of S0] {$S_1$};
-   \node (dots) [right=of S1] {$\cdots$};
-   \node[dpad1] (Sn) [right=of dots] {$S_n$};
-
-   % Forward curved arrows
-   \draw[arr1, bend left=30] (S0) to (S1);
-   \draw[arr1, bend left=30] (S1) to (dots);
-   \draw[arr1, bend left=30] (dots) to (Sn);
-
-   % Backward curved arrows
-   \draw[arr1, bend left=30] (Sn) to (dots);
-   \draw[arr1, bend left=30] (dots) to (S1);
-   \draw[arr1, bend left=30] (S1) to (S0);
-
-   % Incoming edge into S0 from the left
-   \draw[arr1] ($(S0.west)+(-0.5,0)$) -- (S0.west) node[midway, above] {$P_0$};
-
-   % Incoming edge into Sn from the right
-   \draw[arr1] ($(Sn.east)+(0.5,0)$) -- (Sn.east) node[midway, above] {$R$};
-
-   % Double multi-arrow labeled Q! going to S0, S1, Sn
-   \coordinate (A) at ($ (S0)!.5!(Sn) + (0,1.5)$);
-   \draw[arr2,-,shorten <=0pt,shorten >=0pt] (A) to node[left, inner sep=3pt]{$Q!$} ++(0,0.35);
-   % \draw[arr2, ->>, bend right=20] (A) to node[left, inner sep=3pt]{} ++(0,-0.35) (S0);
-   % \draw[arr2, ->, bend right=20] (A) -- ++(0,-0.35) to (S0);
-   % \draw[arr2, ->, bend right=20] (A) -- ++(0,-0.35) to (S1);
-   % \draw[arr2, ->, bend left=20] (A) -- ++(0,-0.35) to (dots);
-   % \draw[arr2, ->, bend left=20] (A) -- ++(0,-0.35) to (Sn);
-   \draw[arr2] (A) to[out=-90,in=90] (S0);
-   \draw[arr2] (A) to[out=-90,in=90] (S1);
-   \draw[arr2] (A) to[out=-90,in=90] (Sn);
-\end{tikzpicture}
-\]
-% \mehran{Actions are missing...}
-% \oliver{this is not a problem; they're already playing their appropriate role as the supports of $P_F$ and $P_B$.}
-%j 
-% \mehran{I'm having a lot of doubts what I proposed in the meeting but I'll write it down anyways. A possible better approach: model the log flow of each edge as a Gaussian random variable. We have two probabilistic models for this flow that are parameterized with the same learnable parameters $\theta$. One goes backward and one goes forward and they need to be made consistent.}
-
-The inconsistency can be written as:
-\[
-\Ex_{s \sim Q} \left[\log \prod_i \left( \frac{Q(s_{i+1} \mid s_i)}{P_F(s_{i+1} \mid s_i)} \right)^{\phi^{(F)}_i} \left( \frac{Q(s_i \mid s_{i+1})}{P_B(s_i \mid s_{i+1})} \right)^{\phi^{(B)}_i} \right]
-\]
-
-If we let $\phi^{(F)}_i = -\phi^{(B)}_i$ then $Q$ cancels out and the forward and backward probabilities will be pushed in opposite directions. We can then use the control mask to make sure that they match by choosing its sign and magnitude according to which of $P_F$ or $P_B$ is larger and how different they are. Specifically, we must set $\chi \propto \log\left( \frac{\prod_i P_F(s_{i+1} \mid s_i)}{\prod_i P_B(s_i \mid s_{i+1})} \right)$.
-
-
-
-
-% whose design is explicitly predicated on 
-
-\section{Decision Making with LIR}
-
-In this section, we show how a few standard decision rules can be viewed as inconsistency minimization. 
+\subsection{Decision Making}
+In this final illustration of the 
+expressive power of LIR, we return to psychological models of agents,
+as we show how some standard decision rules can be viewed as inconsistency minimization. 
 % 
 % \paragraph{Expected Utility Maximization as LIR.}
-\Citet[\S 4, \S6]{oli-dissertation} established that PDGs can represent expected cost,
+PDG inconsistencies can represent expected costs \cite[\S 4, \S6]{oli-dissertation},
 % albeit with some strange 
-albeit by articulating some questionable probabilistic beliefs. 
+% (albeit in a brittle way, and only by articulating some questionable probabilistic beliefs),
+and thus can jointly represent an agent's probabilistic beliefs and utilities.
 % You should care about it because we've already established this construction (sections 4.2.2 and 6.8) as a way of representing something like a utility or a cost.  Yes, it may seem strange, but if you buy into the perspective of the dissertation, this is because agents with preferences are already strange.  Thus, a natural question becomes: what does inconsistency resolution mean in this context? Perhaps surprisingly, it means expected utility maximization, at least if confident in one's beliefs. 
-For the moment, let us entertain the possibility that these strange probabilistic beliefs are in fact an appropriate way to encode preferences.
+% For the moment, let us entertain the possibility that these strange probabilistic beliefs are in fact an appropriate way to encode preferences.
+%
 % (Perhaps this model is appropriate, but looks unnatural only because preferences themselves are unnatural).
 % (Perhaps it looks strange because preferences themselves are strange.)
 % A natural 
-A natural question then emerges: what does it mean to make decisions to as to minimize inconsistency in this context? 
-In this section, we show that the standard picture of rational decision making---that is, expected utility maximization---can be viewed as the pursuit of consistency in this probabilistic model. 
+What does it mean to make decisions to as to minimize inconsistency in this context? 
+% In this section, we show that the standard picture of rational decision making---that is, expected utility maximization---can be viewed as the pursuit of consistency in this probabilistic model. 
 
-Suppose we are trying to choose an action (i.e., control a variable $A$). 
-To do so reasonably, we need to model some context. 
-Let $S$ be a variable representing the current state of the world,
-and $O$ represent the outcome after taking our action. 
+Let's formalize the tranditional setup of decision theory with a PDG. 
+Suppose we are trying to choose an action (a setting of the variable $A$),
+% To do so reasonably, we need to model some context. 
+$S$ is he a variable representing the state of the world (which we are uncertain about),
+and $O$ is a variable representing the final outcome
 %
 To complete the standard picture, let's further assume that 
 we have 
@@ -2178,7 +1879,7 @@ is a decision rule that interpolates between
 \end{enumerate}
 where  $\beta_p$ is your confidence in your prior probabilistic belief $p(S)$, and $\beta_b$ is the confidence of the soft constraint $b$ (i.e., your ``degree of faith'').
 
-\begin{linked}{proposition}{eumaxmax}
+\begin{linked}{prop}{eumaxmax}
    % So long as $b(\Tru{=}\trut \mid U{=}u)$ is strictly increasing in $u$, 
    Suppose $b(\Tru{=}\trut \mid U{=}u) = k \cdot \exp( u )$ for some constant $k$. 
    \begin{enumerate}[nosep]
@@ -2226,7 +1927,7 @@ there are, in principle, three possible resolutions.
 % You can change your action to 
 You can 
 resolve the inconsistency by changing your action, 
-   which amounts to maximizing expected utility (\cref{proposition:eumaxmax}.1);
+   which amounts to maximizing expected utility (\cref{prop:eumaxmax}.1);
    this is thought of as the {rational} approach.
    % maximize your expected utility, which is thought of as the rational thing to do.
 Alternatively, 
@@ -2240,48 +1941,28 @@ Observe that these two resolutions to the internal conflict are two halves of th
    give us the courage to change what must be altered, serenity to accept what can not be helped, and insight to know the one from the other.
 \end{quotation}
 That ``insight'' amounts to the choice of the control mask $\chi$. 
-
-There is of course to resolve the inconsistency: change your beliefs $p(S)$ about what state you are in: wishful thinking. 
-Unfortunately, this kind of self delusion typically only leads to more inconsistency in the future, and is seldom a good idea.  
+%
+There is, of course, a third way to resolve the inconsistency: change beliefs $p(S)$ about the state of the world (i.e., wishful thinking.) 
+However, such a strategy may lead to more inconsistency in the future, making it undesirable and ineffective.  
 % This is one more reason that it can be beneficial to carefully select only small local of the picture to control while resolving inconsistencies.
-
-This example clearly illustrates that,
-   in resolving inconsistencies, 
-   there can be wisdom in 
-   restricting control $\chi$ to a small subset of parameters
-   that extends far
-   beyond the computational savings of doing so.
+This example clearly shows that
+   there can be good reasons for 
+   restricting control $\chi$ 
+   beyond computational savings or the limits of one's power.
    % can be  a computational shortcut.
    % while resolving inconsistency.
 
 
 
 
-\section{Discussion and Future Work}
-
-These examples are only the beginning.
-Our initial investigations suggest that
-opinion dynamics models,
-the training process for diffusion models,
-and much more, are all naturally captured by LIR.
-%
-The surprising generality of LIR begs some theoretical questions.
-What assumptions are needed to prove that it reduces overall inconsistency,
-   as is often the case?
-   How expressive is this mode of computation?
-
-% These results also
-It also
-suggests a novel approach to structured generative modeling:
-haphazardly assemble a PDG with many variables, existing models, priors,
-   constraints, and data of all shapes and sizes.
-Then, train new models to predict variables from one another,
-   using LIR (with random refocusing, say).
-Is this effective?  We are excited to find out!
+\section{Synthetic Experiments}
+\todo{Let's start writing about experiments!}
+\section{Conclusion}
 
 
 \bibliography{lir-refs}
-\bibliographystyle{apalike}
+
+
 
 
 \clearpage
@@ -2330,13 +2011,13 @@ a focus $(\varphi_f, \chi_f) \in \mat F$ according to
 \end{cases}
 \]
 where $\binom{\phi_1}{\phi_2}$ scales $\beta_a$ by $\phi_1$ and $\alpha_a$ by $\phi_2$.
-With these definitions, \cref{proposition:bp} follows easily.
+With these definitions, \cref{prop:bp} follows easily.
 
 
 \onecolumn
 \section{Proofs}
 
-First, some extra details for \cref{proposition:logccave}.
+First, some extra details for \cref{prop:logccave}.
 By parameteriations $\mathbb P$ log-concave, we mean that, for every $a \in \Ar$, and $(s,t) \in \V(\Src a,\Tgt a)$, the function
 $$
    \theta \mapsto -\log \p_a^{\,\theta}(\Tgt a =t\mid\Src a = a) \quad: \Theta_a \to [0,\infty]
@@ -2363,7 +2044,7 @@ which is convex in $(\mat A, b, \frac1{\sigma^2})$.  Now, for the proof.
 % \textbf{\cref{thm:cvx}}. \textit{If $\mathbb P$ is log-concave, then
 % the map $\theta \mapsto \aar*{\varphi \odot( \Ctx + \dg M(\theta))}_\gamma$ is convex.}
 % \begin{proof}
-\recall{proposition:logccave}
+\recall{prop:logccave}
 \begin{lproof} 
        \label{proof:logccave}
    By definition,
@@ -2394,7 +2075,7 @@ which is convex in $(\mat A, b, \frac1{\sigma^2})$.  Now, for the proof.
 \end{lproof}
 
 
-\recall{proposition:EM}
+\recall{prop:LIR-EM}
 
 % \textbf{\cref{prop:bp}.}\textit{
 % If \textsc{Refocus} selects a view non-deterministically from
@@ -2417,7 +2098,7 @@ which is convex in $(\mat A, b, \frac1{\sigma^2})$.  Now, for the proof.
 %     + \dg B
 %      )$
 % are precisely those of BP for different message schedules.}
-\recall{proposition:bp}
+\recall{prop:bp}
 \begin{lproof} \label{proof:bp}
 When $\gamma=1$, and $\alpha, \beta = 1$ for all of the input factors, then the optimal
 distribution $\mu^*$ that realizes the infemum is just the product of factors. It follows that any distribution that has those marginals will minimize the observational inconsistency.
@@ -2427,7 +2108,7 @@ for different adjacent pairs $(a, X)$ correspond to both the message passing sch
 \end{lproof}
 
 
-\recall{proposition:eumaxmax}
+\recall{prop:eumaxmax}
 \begin{lproof}\label{proof:eumaxmax}
    Since the choice $a$ is deterministic, the value of $A$ is determined; likewise the value of $\Tru$ is also fixed. 
    Similarly, as $u$ is a deterministic function, the value of $U$ is determined according to $u$.
@@ -2522,15 +2203,5 @@ for different adjacent pairs $(a, X)$ correspond to both the message passing sch
    $ - \min_{s \in \V S} ( - EU(s,a) ) = \max_{s \in \V S)} EU(s,a)$,
    proving the result.
 \end{lproof}
-
-
-\section{SCRATCH}
-
-\subsection{A Justification}
-The fact that one can describe many useful algorithms in a certain format is not, on its own, a very significant evidence of value. 
-After all, once we know that all of mathematics can be described by sets, 
-
-So we are trying to establish something deeper: that this is 
- 
 
 \end{document}
