@@ -9,3 +9,4 @@
 *.blg
 *.fdb_latexmk
 TeX/lir-iclr.pdf
+*.ipynb

@@ -5,6 +5,7 @@ sys.path.append(str(Path(__file__).absolute().parent.parent.parent))
 
 import random
 from typing import List
+from typing import Tuple
 
 import torch
 import numpy as np
@@ -13,7 +14,7 @@ from pdg.pdg import PDG
 from pdg.rv import Variable as Var
 from pdg.dist import RawJointDist as RJD
 from pdg.dist import CPT, ParamCPD
-from lir__simpler import lir_train_simple
+from lir__simpler import lir_train
 # from pdg.alg.torch_opt_lir import opt_joint  
 from pdg.alg.torch_opt import opt_joint  
 
@@ -127,7 +128,7 @@ def make_every_cpd_parametric_projections_fixed(pdg, init: str = "from_cpd"):
                 mask=_mask_from_cpd(P),
                 cpd = P
             )
- 
+
         key = (X.name, Y.name, L)
 
         if key in pdg.edgedata: 
@@ -141,6 +142,34 @@ def make_every_cpd_parametric_projections_fixed(pdg, init: str = "from_cpd"):
                 pdg.edgedata[key]['cpd'].logits.requires_grad_(False)  # π edges are not learnable
 
     return pdg
+
+
+def _collect_learnables(pdg):
+    out = []
+    for L, P in pdg.edges("l,P"):
+        if hasattr(P, "logits") and not (isinstance(L, str) and L.startswith("π")):
+            out.append((L, P))
+    return out
+
+
+def demo_refocus(M: PDG, t: int):
+    """Return (attn_alpha, attn_beta, control_mask) for step t.
+    - Zero-out β for the first learnable edge (drop its contribution).
+    - Double β for the second learnable edge (amplify).
+    - Freeze the third learnable edge's parameters via control_mask=0.
+    Unspecified edges implicitly use scale 1 and control 1.
+    """
+    learns = _collect_learnables(M)
+    attn_alpha = {}
+    attn_beta = {}
+    control = {}
+    if len(learns) >= 1:
+        attn_beta[learns[0][0]] = 0.0
+    if len(learns) >= 2:
+        attn_beta[learns[1][0]] = 2.0
+    if len(learns) >= 3:
+        control[learns[2][0]] = 0.0
+    return attn_alpha, attn_beta, control
 
 # -----------------------------
 # 
@@ -157,7 +186,7 @@ def test_lir_on_random_pdg(num_vars=4, num_edges=4, gamma=1.0, seed=0, init="fro
                               tgt_range=(1, 1),
                               seed=seed)
     # pdg = make_every_cpd_parametric(pdg, init=init)
-    pdg = make_every_cpd_parametric_projections_fixed(pdg, init=init) #Testing with everything uniform except π edges (initialized from CPD)
+    pdg = make_every_cpd_parametric(pdg, init=init) #Testing with everything uniform except π edges (initialized from CPD)
     # Debug: print edge structure
     print("\nEdges (label -> X -> Y):")
     for L, X, Y, α, β, P in pdg.edges("l,X,Y,α,β,P"):
@@ -168,12 +197,13 @@ def test_lir_on_random_pdg(num_vars=4, num_edges=4, gamma=1.0, seed=0, init="fro
     mu0 = opt_joint(pdg, gamma=gamma, iters=25, verbose=False)
 
     # ---- LIR outer loop (θ-updates only; μ is re-solved each step) ----
-    lir_train_simple(
+    lir_train(
         M=pdg,
         gamma=gamma,
-        T=30,              # outer steps
-        inner_iters=20,   # iterations for μ* each step
-        lr=1e-2,
+        T=5,             # number of LIR training steps
+        outer_iters=5,   # iterations for θ each step
+        inner_iters=5,   # iterations for μ* each step
+        lr=1e-2,          # learning rate for each LIR step
         optimizer_ctor=torch.optim.Adam,
         verbose=True,
         mu_init=mu0
@@ -193,9 +223,77 @@ def test_lir_on_random_pdg(num_vars=4, num_edges=4, gamma=1.0, seed=0, init="fro
     return mu_star, pdg
 
 
+def test_refocus_masks(num_vars=4, num_edges=5, gamma=0.2, seed=1, init="from_cpd"):
+    print("=== Testing refocus() masks (attention + control) ===")
+    pdg = generate_random_pdg(num_vars=num_vars,
+                              num_edges=num_edges,
+                              val_range=(2, 4),
+                              src_range=(1, 2),
+                              tgt_range=(1, 1),
+                              seed=seed)
+    pdg = make_every_cpd_parametric_projections_fixed(pdg, init=init)
+
+    learns = _collect_learnables(pdg)
+    if len(learns) < 2:
+        print("Not enough learnable edges to meaningfully test refocus; skipping.")
+        return None, pdg
+
+    # Snapshot logits before training
+    before = {L: P.logits.detach().clone() for (L, P) in learns}
+
+    # Warm start μ
+    mu0 = opt_joint(pdg, gamma=gamma, iters=25, verbose=False)
+
+    # Run LIR with demo_refocus providing masks each step
+    lir_train(
+        M=pdg,
+        gamma=gamma,
+        T=15,
+        outer_iters=8,
+        inner_iters=20,
+        lr=5e-3,
+        optimizer_ctor=torch.optim.Adam,
+        verbose=True,
+        mu_init=mu0,
+        refocus=demo_refocus,
+    )
+
+    # Compare logits after training
+    after = {L: P.logits.detach().clone() for (L, P) in learns}
+
+    # Identify which labels were masked
+    attn_alpha, attn_beta, control = demo_refocus(pdg, t=0)
+    frozen_label = next((L for L, _ in learns[2:3]), None)
+    doubled_label = next((L for L, _ in learns[1:2]), None)
+
+    # Check: frozen edge unchanged
+    if frozen_label is not None:
+        changed = (after[frozen_label] - before[frozen_label]).abs().max().item()
+        print(f"Frozen edge {frozen_label}: max |Δ| = {changed:.3e} (expected ~0)")
+        assert changed < 1e-8, "Control mask failed: frozen edge parameters changed."
+
+    # Check: at least one unfrozen edge changed
+    any_changed = False
+    for L, _ in learns:
+        if L == frozen_label:
+            continue
+        delta = (after[L] - before[L]).abs().max().item()
+        if delta > 1e-6:
+            any_changed = True
+            break
+    print(f"Any unfrozen edge changed? {any_changed}")
+    assert any_changed, "No learnable edges changed; attention/control masks may be misapplied."
+
+    print("Refocus mask test passed.")
+    return None, pdg
+
+
 if __name__ == "__main__":
     
     #uniform <=> all edges initialized to ones except the projection edges which are initialized to what they were in the cpd
-    _mu, _pdg = test_lir_on_random_pdg(init = "uniform", gamma=0.0)  # "from_cpd" or "uniform" or "random"
+    _mu, _pdg = test_lir_on_random_pdg(init = "random", gamma=0.0)  # "from_cpd" or "uniform" or "random"
     print(_mu)
     print(_pdg)
+
+    print("\n--- Running refocus mask test ---")
+    test_refocus_masks(init="random", gamma=0.0)
