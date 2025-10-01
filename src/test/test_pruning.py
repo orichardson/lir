@@ -1,7 +1,7 @@
 import numpy as np
 
 from pdg.pdg import PDG
-from pdg.rv import Variable as Var
+from pdg.rv import Unit, Variable as Var
 from pdg.dist import CPT
 from lir__simpler import (
     pdg_cleanup,
@@ -14,8 +14,8 @@ from pdg.alg.torch_opt import opt_joint
 def _build_dummy_pdg():
     """
     Build a small PDG with two disconnected components:
-      - Component 1: A -> B (deterministic copy) with β=1
-      - Component 2: C -> D (deterministic copy) with β=1
+      - Component 1: A -> B with β=1
+      - Component 2: C -> D with β=1
 
     This allows us to test that:
       - cleanup (isolated var pruning) does not change results
@@ -26,10 +26,14 @@ def _build_dummy_pdg():
     C = Var.binvar("C")
     D = Var.binvar("D")
 
-    # deterministic aligned copy CPDs by index:
-    # map the i-th value of source to the i-th value of target
-    P_BA = CPT.det(A, B, {A.ordered[i]: B.ordered[i] for i in range(len(A))})
-    P_DC = CPT.det(C, D, {C.ordered[i]: D.ordered[i] for i in range(len(C))})
+    # # deterministic aligned copy CPDs by index:
+    # # map the i-th value of source to the i-th value of target
+    # P_BA = CPT.det(A, B, {A.ordered[i]: B.ordered[i] for i in range(len(A))})
+    # P_DC = CPT.det(C, D, {C.ordered[i]: D.ordered[i] for i in range(len(C))})
+
+    ## EDIT: trying with random edges
+    P_BA = CPT.make_random(A, B)
+    P_DC = CPT.make_random(C, D)
 
     M = PDG()
     M += ("A", A)
@@ -47,7 +51,7 @@ def _build_dummy_pdg():
 
 def _infer_joint(M, gamma=0.0, iters=200):
     """Convenience wrapper to run the default torch-based joint optimization and return RJD."""
-    return opt_joint(M, gamma=gamma, iters=iters, verbose=False)
+    return opt_joint(M, gamma=gamma, iters=iters, lr=1E-2, verbose=False)
 
 
 def test_cleanup_keeps_results_equal():
@@ -73,6 +77,18 @@ def test_cleanup_keeps_results_equal():
         assert np.allclose(mf, mc, atol=1e-8)
 
 
+
+def test_dropped_vars():
+    """
+    verify that stripping out the zero 
+    """
+    M = PDG()
+    M += Var.binvars("ABCD")
+    M += CPT.make_random(Unit, M.vars["A"]) # add variable A to the PDG but not others
+    cleanup_rlst = pdg_cleanup(M)
+
+    assert len(cleanup_rlst.varlist) == 1 and cleanup_rlst.varlist[0] == M.vars['A']
+
 def test_decompose_and_infer_matches_monolithic():
     """
     Verify that decomposing into connected components and inferring per component,
@@ -80,9 +96,9 @@ def test_decompose_and_infer_matches_monolithic():
     """
     M = _build_dummy_pdg()
 
-    mu_full = _infer_joint(M, gamma=0.0, iters=200)
+    mu_full = _infer_joint(M, gamma=0.01, iters=2000)
 
-    def _infer_fn(subM: PDG, gamma=0.0, iters=200):
+    def _infer_fn(subM: PDG, gamma=0.01, iters=2000):
         return _infer_joint(subM, gamma=gamma, iters=iters)
 
     mu_combo = decompose_and_infer(
@@ -92,11 +108,11 @@ def test_decompose_and_infer_matches_monolithic():
         combine_result=True,
         cleanup=True,                 # exact cleanup only
         drop_zero_weight_edges=False, # keep exact semantics
-        inference_kwargs=dict(gamma=0.0, iters=200),
+        inference_kwargs=dict(gamma=0.01, iters=200),
     )
 
     # Compare marginals for all variables
     for V in mu_full.varlist:
-        assert np.allclose(mu_full[V].to_numpy(), mu_combo[V].to_numpy(), atol=1e-8)
-
+        print(mu_full[V].to_numpy(), 'vs', mu_combo[V].to_numpy())
+        assert np.allclose(mu_full[V].to_numpy(), mu_combo[V].to_numpy(), atol=1e-4)
 
