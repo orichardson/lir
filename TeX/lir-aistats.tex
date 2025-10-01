@@ -38,19 +38,6 @@
     % \usepackage{tikz}
 \usepackage{pdgtools}
 
-    \usepackage{amsthm,thmtools}
-    \theoremstyle{plain}
-    % \newtheorem{theorem}{Theorem}[section]
-    \newtheorem{theorem}{Theorem}
-    \newtheorem{prop}[theorem]{Proposition}
-    \newtheorem{lemma}[theorem]{Lemma}
-    \newtheorem{corollary}[theorem]{Corollary}
-    \theoremstyle{definition}
-    \newtheorem{definition}{Definition}
-    \newtheorem{assumption}[definition]{Assumption}
-    \theoremstyle{remark}
-    \newtheorem{remark}[theorem]{Remark}
-
    \usepackage[nobox]{restatelinks}
 
     \usepackage[utf8]{inputenc} % allow utf-8 input
@@ -74,6 +61,23 @@
     \usepackage{enumitem}
     \usepackage{bbm}
     \usepackage[capitalize,noabbrev,nameinlink]{cleveref}
+
+    
+    \usepackage{amsthm,thmtools}
+    \theoremstyle{plain}
+    % \newtheorem{theorem}{Theorem}[section]
+    \newtheorem{theorem}{Theorem}
+    \newtheorem{prop}[theorem]{Proposition}
+    \newtheorem{lemma}[theorem]{Lemma}
+    \newtheorem{corollary}[theorem]{Corollary}
+    \theoremstyle{definition}
+    \newtheorem{definition}{Definition}
+    \newtheorem{assumption}[definition]{Assumption}
+    \theoremstyle{remark}
+    \newtheorem{remark}[theorem]{Remark}
+    
+   \crefname{prop}{Proposition}{Propositions}
+
 
 
     \relax % Short arrows.
@@ -149,7 +153,8 @@
 
     % commenting
     \usepackage[linecolor=black!20,textsize=tiny]{todonotes}
-    \setlength{\marginparwidth}{3.3cm}
+   %  \setlength{\marginparwidth}{3.3cm}
+    \newcommand\commentout[1]{} % remove material with proper scoping and nesting
     \newcommand{\mehran}[1]{\todo[backgroundcolor=blue!20]{\textbf{Mehran:} #1}}
     \newcommand{\ali}[1]{\todo[backgroundcolor=yellow!20]{\textbf{Ali:} #1}}
     \newcommand{\oliver}[1]{\todo[backgroundcolor=green!20]{\textbf{Oliver:} #1}}
@@ -186,13 +191,1517 @@ We present a generic algorithm for learning and approximate inference with an in
 
 
 \section{Introduction}
+What causes one to change their mind, to learn, act, and draw inferences? 
+From a neurocognitive perspective, the mind operates by resolving internal inconsistencies, whether they arise from conflicting new information or from new awareness of contradictions among prior beliefs.
+Theories of cognitive dissonance \cite{festinger1962cognitive} famously explain much of human behavior as targeted adjustments to dispel the discomfort of psychological inconsistency. 
+% The brain continuously reconciles sensory inputs, prior beliefs, and predictions---an operation thought to underlie learning, perception, and planning. 
+Predictive coding theories \cite{rao1999predictive,friston2005theory} posit that discrepancies between expected and actual sensory inputs---known as prediction errors---are treated as inconsistency signals that drive learning via local adjustments to neural representation.
+% This principle is a recurring theme, from classic theories of cognitive dissonance to modern frameworks like predictive coding, which treats prediction errors as signals that drive learning via local adjustments.
+% A common theme  merges: cognitive work and adaptation are driven by a process of local inconsistency resolution.
+% We formalize this process in a graphical model.
+% 
+Inspired by this neurocognitive principle, we introduce a computational framework for local inconsistency resolution (LIR) in probabilistic models.
+\commentout{
+   %oli1: I think we can do better by slowing down and motivating using my material from below first
+    The key idea is simple: rather than resolving all inconsistencies in a belief system globally (which may be intractable), we iteratively identify and locally reduce inconsistency over a subset of variables using only parameters under direct control. This mirrors how both human cognition and neural systems operate under limited attention and bounded control, often correcting inconsistencies in one area while remaining unaware of or unable to act on others 
+   \todo{cite}.}
+% This paper introduces a computational framework formalizing the general principle of Local Inconsistency Resolution (LIR) in graphical models. 
+
+% In practice, this process is constrained by the limits of cognition.
+The locality---which comes in two flavors---is key for those of us with cognitive limitations.
+First, inconsistency can be difficult to detect, and 
+   % it cannot be constructively resolved without awareness. 
+   impossible to address constructively unless we are aware of it.
+A further complication is that one seldom has uniform control over one's epistemic state; 
+   we are reluctant to revise our direct observations or bedrock principles, forcing us to instead make adjustments to more pliable beliefs elsewhere.
+So in practice, we resolve inconsistencies \emph{locallly}---by looking at only a small part of the picture, and changing another small part of it.
+% TODO MOVEME
+This process isn't guaranteed to work: some inconsistencies simply cannot be seen with a narrow focus, and fixing one inconsistency can easily create others out of view.
+% This raises a profound question: how should you chose what to focus on?
+
+
+
+% Nevertheless, it is a useful 
+% It also poses a major question: how exactly should you chose what to focus on?
+
+% We introduce a computational framework that formalizes this process in probabilistic models, 
+   % which we call Local Inconsistency Resolution (LIR).
+% While this local approach has complexities---fixing one inconsistency can create others out of view---w
+% We will show that LIR provides a powerful recipe for learning and (approximate) inference and demonstrate that many foundational techniques in the literature arise naturally as instances of it.
+%
+% We formalize the process in the language of probability and convex optimization,
+% and show how that many foundational techniques in the literature arise naturally as instances of it.
+% Historically, much of the belief revision literature has focused on
+% conflicts between propositions and entrenchment \cite{agm,...}.
+
+
+Our approach leans heavily on the theory of
+Probabilistic Dependency Graphs (PDGs), which are very flexible graphical
+   models that allow for arbitrary (even inconsistent)
+   probabilistic information, weighted by confidence \cite{pdg-aaai}.
+There is a natural way
+% information-theoretic way
+   % of measuring the inconsistency of a PDG,
+   to measure how inconsistent a PDG is,
+   and many standard loss functions
+   can be viewed as measuring the inconsistency of a PDG that
+   describes the appropriate situation \cite{one-true-loss}.
+LIR operationalizes training models as
+   the process of adjusting parameters to resolve this inconsistency.
+
+% Calculating a PDG's inconsistency can be intractable.
+% In general, calculating a PDG's degree of inconsistency can be intractable.
+% Computing a PDG's degree of inconsistency can be straightforward in some cases, but it is NP-hard in general \citep{pdg-infer}.
+Computing a PDG's degree of inconsistency is easy in some cases, 
+   but it is often intractable (e.g., the number of solutions to SAT problem and the log evidence
+   of a latent variable model can both be represented as PDG inconsistencies),
+   and is NP-hard in general. 
+% As shown by \citet{pdg-infer}, 
+The problem is equivalent to inference in PDGs, 
+   which, like for other graphical modes, 
+   can be achieved in polynomial time under the assumption of bounded tree-width \cite{pdg-infer}.   
+% \citet{one-true-loss} shows how variational inference can
+%     be understood as the adoption of extra beliefs to
+%     % overapproximate the overall inconsistency in a way that is easier to calculate.
+%     % in a tractable way.
+%     get an overapproximation that is easier to calculate.
+Variational inference \citep{blei2017variational,kingma2013autoencoding,jordan1999introduction} can be understood as
+   the practice of adopting extra beliefs to
+   % overapproximate the overall inconsistency in a way that is easier to calculate.
+   % in a tractable way.
+   % overapproximate it in a way that is easier to calculate \cite{one-true-loss}.
+   get an over\-approximation of inconsistency that is easier to calculate \cite{one-true-loss}.
+% Our algorithm allows for this kind of
+Our approach also enables the opposite:
+% This is one use of our algorithm,   but we also enable the opposite:
+   focusing on small parts of the graph at a time to
+   address tractable under\-approximations of the global inconsistency.
+%
+Nevertheless, we will show that LIR provides a powerful recipe for learning and (approximate) inference and demonstrate that many foundational techniques in the literature arise naturally as instances of it.
+
+
+% Thus, it enjoys benefits such as higher potential for parallelization.
+% Local Inconsistency Resolution (LIR) is very expressive.
+
+
 \section{Preliminaries and Parametric PDGs}
+% Each variable $X$ can take on values from a set $\V\!X$ of possible values.
+\textbf{Variables and Probability.}
+We write $\V\! X$ for the set of values that a (random) variable $X$ can take on,
+and $\Delta \V \! X $ for the set of distributions over $\V\!X$.
+% Glump glump glump glump glump glump glump.
+A conditional probability distribution (cpd) is a map
+% (cpd)
+$p(Y|X) : \V \!X \to \Delta\mskip-1mu \V \mskip-1mu Y$.
+%
+% We write $\X$ for 
+If $\X = \{X_1, X_2, \ldots\}_{i \in I}$ is an (indexed) set of variables, we regard $\X$ itself as a variable that can take on joint settings $\V\!\X = \prod_{i\in I} \V \! X_i$.
+If $\mu \in \Delta \V\!\X$ is a joint distribution and $Y \subseteq \X$, we write $\mu(Y)$ for the marginal of $\mu$ on the variables $Y$. 
+% is a distribution over the values of $Y$ for each value of $X$.
+%
+% \begin{definition}
+
+   A \emph{directed hypergraph}
+   % $(N, \mathcal A)$ is a set $N$ of nodes, and a set $\mathcal A$ of \emph{arcs},
+   $(N, \mathcal A)$ is a set of nodes $N$ and a set of arcs $\mathcal A$,
+   % $(N, \mathcal A)$ is a set of nodes $N$ and a set of arcs $\Ar$,
+   % each $a \in \mathcal A$ of which is associated with
+   % so that $a \in \Ar$ is associated
+   % to each $a \in\! \Ar$ of which we associate
+   each $a \in \mathcal A$ of which
+   is associated with
+   % comes with
+   a set $\Src a \subseteq N$ of source nodes,
+   and $\Tgt a \subseteq N$ target nodes.
+   We also write $\ed {\scriptstyle a}{S}{T} \in \Ar$ to specify an
+   arc $a$ together with its sources $S = \Src a$ and targets $T = \Tgt a$.
+% \end{definition}
+
+% \paragraph{Geometry.}
+\textbf{Geometry.}
+% We will need various parameter spaces $\Theta$; to simplify the presentation, assume that parameter spaces are a convex subsets of $\mathbb R^n$ (not necessarily of the same dimension)
+% We will need various parameter spaces;
+% to simplify the presentation, assume that a parameter space $\Theta$ is a convex subset of $\mathbb R^n$ (not necessarily of the same dimension).
+% to simplify the presentation, 
+For our purposes, a \emph{pointed parameter space} $\Theta$ is a convex subset of $\mathbb R^n$ for some $n\ge0$
+   (that may differ between parameter spaces) with a distinguished default value $\theta_0 \in \Theta$.
+   % ; we assume this is the zero vector to simplify notation, but the choice does not matter.
+A \emph{vector field} over $\Theta$ is a differentiable
+   map $X$ assigning to each $\theta \in \Theta$ a vector $X_\theta \in \mathbb R^n$.
+The \emph{gradient} of a twice differentiable map $f : \Theta \to \mathbb R$,
+   % written $\nabla_\theta f(\theta)$,
+   which we write $\nabla_\Theta f(\Theta)$, is a vector field.
+Given a vector field  $X$ and an initial point $\theta_0 \in \Theta$, there is a unique trajectory $y(t)$ that solves the ordinary differential equation (ODE)
+$\{\frac{\mathrm d }{\mathrm d t}y(t) = X_{y(t)}$,  $y(0) = \theta_0\}$.
+To refer to that solution compactly, we adopt the notatation $\exp_{\theta_0}( X ) := y(1)$.
+   % for a compact way of referring to the solution of the ODE.
+   % this trajectory.
+   % compactly refer to this curve, which is standard in many contexts \cite{lee.smooth-manifolds}.
+% At first glance,
+% Although on the surface
+Although $\exp$ may appear to give us access only to $y(1)$,
+   % it is easy to show
+    it is easily verified
+    that $\exp_{\theta_0}(t X) = y(t)$ for all $t \ge 0$.
+% Although it may not be obvious, $\exp$ indeed allows us to describe the entire trajectory, because $\exp_{p_0}(tX) = p(t)$.
+Putting all the pieces together: the map $t\mapsto \exp_\theta(t \nabla_\Theta f(\Theta))$ is the smooth path beginning at $\theta$ that follows the gradient of $f$. It is known as
+\emph{gradient flow}.
+
+\vfull{
+Given a manifold $\Theta$ and a differentiable map $P : \Theta \to \Delta \V\! X$,
+    the Fisher Information Matrix
+$\mathcal I(\theta)
+   % = [ \Ex_{x\sim P(\theta)}[ \frac{\partial^2}{\partial \theta_i \partial \theta_j}  \log p_\theta(x) ]]_{i,j}
+$
+at each $\theta \in \Theta$
+% forms such a Riemannian metric;
+gives rise to a Riemannian metric;
+thus the mere fact that $\Theta$ parameterizes a family of
+probability distributions is enough to make it a Riemannian manifold.
+% by $\mat u, \mat v \mapsto \mat u^{\sf T} \mathcal I(\theta) \mat v$.
+Moreover, $\mathcal I(\theta)$ is particularly natural in a probabilistic context;
+   up to a multiplicative constant, it is the \emph{only} such metric on $\Theta$ that is invariant under sufficient statistics, \cite{chentsov}. \cite{infogoem}
+}
+
+% \subsection{PDGs}
+% \paragraph{Probabilistic Dependency Graphs.}
+\textbf{Probabilistic Dependency Graphs.}
+% \paragraph{PDG Syntax.}
+A PDG is a
+   directed
+   (hyper)graph
+   whose arcs carry
+   probabilistic and causal information, weighted by confidence \cite{pdg-aaai}.
+% Equivalent variants of PDGs were defined by \citet{one-true-loss,pdg-infer};
+% we give another variant whose explicit parametric nature is useful for our purposes.
+We define an unweighted (but for our purposes, equivalent) variant whose explicit parametric nature will prove useful.
+
+\begin{definition}
+   % A \emph{parametric PDG family}
+   % A \emph{parametric probabilistic dependency graph} (PPDG)
+   % A \emph{Parametric Probabilistic Dependency Graph} (PPDG)
+   An \emph{unweighted parametric PDG}
+   % $\dg P \!=\! (\X\mskip-2mu, \Ar, \mathbb P, \balpha, \bbeta )$
+   $
+   \dg M(\Theta) =
+   (\X\mskip-2mu, \Ar, \Theta= \{\Theta_a \}_{a \in \Ar}, \mathbb P =\{ \p_a \}_{a \in \Ar} )$
+   is a directed hypergraph
+       $(\X\mskip-2mu, \Ar)$
+   whose nodes $\X$ are
+   variables,
+   and whose arcs
+   $a \in \Ar$
+   % $\ed aST \in \Ar$
+   are each associated with
+   % arc $a \in \Ar$ is associated with:
+   %
+   % \begin{itemize}
+           % [nosep,itemsep=2pt,left=0pt]
+           % [itemsep=2pt]
+           % [itemsep=3pt,parsep=0pt,topsep=0pt]
+       % \item (subsets of) variables $\Src a, \Tgt a \subset \X$, indicating the respective source and target variables of the edge;
+       % \item 
+       a parameter space $\Theta_a$ 
+       % with a default value $\theta^{\text{init}}_a$.
+       % \item
+       % a conditional probability distribution
+       % {%\subafalse
+       %     $\p_a(\Tgt a | \Src a)$},
+       % on the target variables given
+       % the values of the source variables,
+       % \item
+       and
+       a map
+       $\p_a : \Theta_a \times \V\Src a \to \Delta \V \Tgt a$
+       that gives a probability distribution
+       $\p_{a}(\Tgt a | \Src a;\theta)$
+       over $a$'s target variables given values of its sources and a parameter setting $\theta \in \Theta_a$.
+
+   %     \item a confidence
+   %     % $\beta_a \in \mathbb R \cup \{\infty\}$
+   %     $\beta_a \in \mathbb R \cup \{\infty\}$
+   %     in the cpd
+   %     {
+   %         %\subafalse
+   %         $\p_a(\Tgt a | \Src a)$}%
+   %     % \discard{(as measured by the number of independent observations that support $\p_a$), }
+   %     % .
+   %     ,
+   %     and
+   % \item
+   %     a confidence $\smash{\alpha_a \in \mathbb R}$
+   %     in the functional dependence of
+   %     {%\subafalse
+   %     $\Tgt a\mskip-2mu$ on $\Src a\mskip-2mu$}
+   %     expressed by $a$.
+   %     % \discard{
+   %     % (as measured by the expected number of independent causal mechanisms corresponding to $a$,
+   %     % that determine $\Tgt a$ given $\Src a$).%
+   %     % }
+   % \item a degree of confidence
+   %     % $\beta_a \in \mathbb R \cup \{\infty\}$
+   %     $\smash{\alpha_a \in \mathbb R}$
+   %     in the functional dependence of
+   %     {%\subafalse
+   %     $\Tgt a\mskip-2mu$ on $\Src a\mskip-2mu$}
+   %     expressed by $a$,
+   % and a degree of confidence $\beta_a \in [0,\infty]$
+   % in the cpd $\p_a$\,.
+   %     $\alpha_a$ can be thought of as the number of independent mechanisms by which $\Src a$ determines $\Tgt a$,
+   %     while $\beta_a$ can be thought of as the effective number of independent reports endorsing that the probability of $\Tgt a$ given $\Src a$ is $\p_a$.
+   % \end{itemize}
+   % For completeness, $\Theta = \{\Theta_a \}_{a \in \Ar}$, $\mathbb P = \{ \p_a \}_{a \in \Ar}$.
+   % $\balpha = \{ \alpha_a \}_{a \in \Ar}$, $\bbeta = \{\beta_a\}_{a \in \Ar}$.
+   %
+   % A PDG is the object obtained by fixing the parameters; thus,
+   % a
+   % joint setting
+   % $\theta = (\theta_a)_{a \in \Ar}$ yields a PDG
+   % $\dg M = \dg M(\theta)$.
+   %
+   % We call a PDG \emph{unweighted} if $\balpha=\bbeta=\mat 1$.
+   \qedhere
+\end{definition}
+
+An unweighted PDG is the object obtained by fixing the parameters; thus,
+a
+joint setting
+$\btheta = (\theta_a)_{a \in \Ar}$ yields a PDG
+$\dg M = \dg M(\btheta)$.
+Thus, at a syntactic level, an unweighted PDG is just an arbitrary collection of cpds. 
+When constructing PDGs from known cpds (e.g., $p(Y|X)$), we use the mathematical symbol representing that cpd (e.g., $p$) for both $a$ and $\p_a$. 
+We typically depict (parametric) PDGs in graphical notation, specifying a hypergraph 
+% drawing
+% $f(Y|X)$ is written
+% \begin{tikzpicture}[center base]
+% 	\node[dpadinline] (X) at (0,0) {$X$};
+% 	\node[dpadinline] (Y) at (1.1,0){\small$Y$};
+%  	\draw[arr1,->] (X) -- node[fill=white, fill opacity=1, pos=0.35, inner sep=-1pt]{$f$} (Y);
+% \end{tikzpicture}\,,
+\vspace{-3ex}
+\begin{center}
+% a cpd
+$p(Y|X,Z)$ \;as\;
+\begin{tikzpicture}[center base]
+   \node[dpadinline] (Y) at (0.95,0) {$Y$};
+   \node[dpadinline] (X) at (0,-0.25) {$X$};
+   \node[dpadinline] (Z) at (0, 0.25) {$Z$};
+   \coordinate (ctr) at (0.38,0);
+   \cmergearr[arr2] {X.0}{Z.0}Y{ctr}
+   \node[above right=-1pt and -3pt of ctr] {$p$};
+\end{tikzpicture}\,
+% ~~\text{and $q(Y)$ as }~~
+% \begin{tikzpicture}[center base]
+% 	\node[dpad0] (Y) at (1,0) {$Y$};
+% 	\draw[arr2, <-] (Y) -- node[left,inner sep=2pt]{$q$} ++(0,1);
+% \end{tikzpicture}~.
+% ~\text{and $q(A,B)$ as }~
+$\quad$and$\quad$ $q(A,B)$ \;as\;
+\begin{tikzpicture}[center base]
+   \node[dpadinline] (A) at (1,0.25) {$A$};
+   \node[dpadinline] (B) at (1,-0.25) {$B$};
+   \coordinate (tip) at (0.15, 0);
+   \coordinate (center) at (0.45,0);
+   % \draw[arr2, <-] (Y) -- node[left,inner sep=2pt]{$q$} ++(0,1);
+   \cunmergearr[arr1] {tip}{A.180}{B.180}{center}
+   \node[above left=0pt and 0pt of center,inner sep=2pt]{$q$};
+\end{tikzpicture}\,.
+\end{center}
+
+It is not hard to see that a PDG can be faithfully viewed as the special case of a parametric PDG in which every 
+$\Theta_a = \{ \theta_0 \}$ is a singleton containing only the default value.
+Conversely, a parametric PDG may be viewed as a PDG by adding each $\Theta_a$ as an explicit variable.
+% \unskip\footnote{See \eqref{pdg:classfication}}
+
+% \paragraph{Semantics.}
+% What makes PDGs interesting are
+\textbf{PDG Semantics and Inconsistency.}
+The power of PDGs comes from their semantics, which sew their (possibly inconsistent)
+cpds and confidences together into joint probabilistic information.
+
+A PDG contains two kinds of information: qualitative information about
+the types of causal mechanisms (the graph $\Ar$),
+and observational data (the cpds $\mathbb P$).
+In the standard presentation, a PDG also comes with weight vectors  $\balpha,\bbeta \in \smash{\overline{\mathbb R}}^\Ar$ over the arcs, encoding confidence in information of each type: $\alpha_a$ can be thought of as the number of independent causal mechanisms by which $\Src a$ determines $\Tgt a$, while $\beta_a$ can be thought of as the effective number of independent reports endorsing that the probability of $\Tgt a$ given $\Src a$ is $\p_a$.
+Corresponding to these two types of information, PDG semantics provide a way of scoring compatibility of a joint distribution $\mu(\X)$ with information of each type.
+
+% Corespondingly, we can score a candidate joint distribution $\mu \in \Delta \V\!\X$ by its incompatibility with each kind of information.
+% This is done by scoring joint distributions $\mu \in \Delta \V\!\X$
+   % by their incompatibility
+With respect to a PDG $\dg M$,
+the \emph{observational incompatibility}
+of a joint probability measure
+$\mu \in \Delta \V\!\X$ is given by
+a weighted sum of relative entropies
+\begin{equation}
+\OInc_{\dg M}(\mu) :=
+   % \sum_{L \in \Ed} \beta\ssub L\, \kldiv[\Big]{\mu(\Tgt L,\Src L)}{p\ssub L(\Tgt L | \Src L) \mu(\Src L)}.
+   %oli5:
+   % \sum_{a \in \Ar}
+   \!
+   \sum_{\smash{\ed aST \mathrlap{\,\in \Ar}}} \subafalse
+   \beta_a\, \kldiv[\Big]{\mu(\Tgt a,\Src a)}{\p_a(\Tgt a | \Src a) \mu(\Src a)}
+       ,
+       \label{eq:oinc}
+\end{equation}
+and can be thought of as the excess cost of using codes
+optimized for our beliefs $\mathbb P$ weighted by the confidence we have in them, when in fact $\X \sim \mu$.
+If $\bbeta > \mat 0$, then $\OInc_{\dg M}(\mu) = 0$ if and only if 
+$\mu$ satisfies the constraints imposed by every cpd of $\mathbb P$.
+% $\mu(Y|X) = \p_a$ for all 
+Intuitively, the cpds of $\mathbb P$ are inconsistent when constraints are not simultaneously satisfiable,
+in which case the \emph{observational inconsistency} $\aar{\dg M}_0 := \inf_\mu \OInc_{\dg M}(\mu)$ 
+is an important measure the magnitude of the unavoidable internal conflict between the probabilistic data in $\dg M$.
+% turns out to be a particularly useful measure of the magnitude of the gap. 
+%
+
+Modern machine learning has a tendency to prize observational data above all else, and in particular above structural informaion such as causal influence or qualitative independencies; for this reason, the scoring function $\OInc$ and the corresponding observational inconsistency $\aar{\dg M}_0$ will suffice for most of our examples. 
+% Moreover, it is possible 
+%
+That said,
+we can also score $\mu$ by its incompatibility
+with the structural information in the weighted hypergraph $(\Ar,\balpha)$.
+This \emph{structural deficiency} is given by:%
+   \footnote{If the underlying variables are continuous, then we redefine entropy
+   as follows. Assume each variable comes with a base measure $\lambda$, like the Lebesgue or counting measure.
+   Then define $\H_\mu(X) := \Ex_\mu[ \log \frac{\mathrm d\mu(X)}{\mathrm d \lambda_X}]$, where $\frac{\mathrm d\mu}{\mathrm d\lambda}$ is the Radon-Nikodym derivative of $\mu(X)$ with respect to $\lambda_X$.}
+   % with respect to a PDG $\dg M$ is
+\begin{align*}
+   % \SInc_{\dg M}(\mu) := - \H(\mu) + \sum_{L \in \Ed} \alpha\ssub L\, \H_\mu(\Tgt L | \Src L),
+   \SDef_{\!\Ar,\balpha}(\mu) &:=
+   % \SDef_{\!(\Ar,\balpha)}(\mu) &:=
+       % - \H(\mu) + \sum_{a \in \Ar} \alpha_a\, \H_\mu(\Tgt a | \Src a).
+       % \pqty[\Big]{\; \sum_{\ed aST \mathrlap{\,\in \Ar}}\subafalse \alpha_a\, \H_\mu(\Tgt a | \Src a) } - \H(\mu).
+       %%%%
+       % \kldiv{\mu}{\lambda_{\X}} -
+       % \sum_{\ed aST \mathrlap{\,\in \Ar}}\subafalse \alpha_a\,
+       %     \kldiv{\mu (\Tgt a\Src a)} { \lambda_{\Tgt a} \mu(\Src a) }
+       \numberthis
+        \label{eq:sdef}
+       %%%%
+       % \\ &=
+   %         \Ex_{\mu}  \bigg[ \log\; \frac{\mu(\X)}{\lambda(\X)}
+   %         % \prod_{\vphantom{\big|}\ed aST \mathrlap{\,\in \Ar}}\subafalse
+   %         \prod_{\ed aST }\subafalse
+   %             \left(\frac{\lambda(\Tgt a|\Src a)}{\mu(\Tgt a | \Src a)}\right)^{\!\alpha_a}
+   %         \bigg]
+   % ,
+       - \H(\X) + \sum_{a \in \Ar} \alpha_a \H(\Tgt a \mid \Src a)
+       % \Ex_{\mu}  \bigg[ \log\; \frac{\mu(\X)}{\lambda(\X)}
+       % % \prod_{\vphantom{\big|}\ed aST \mathrlap{\,\in \Ar}}\subafalse
+       % \prod_{\ed aST }\subafalse
+       %     \left(\frac{\lambda(\Tgt a|\Src a)}{\mu(\Tgt a | \Src a)}\right)^{\!\alpha_a}
+       % \bigg]
+   ,
+   % \vspace{-1ex}
+\end{align*}
+% can be thought of as measuring how effectively $\mu$ factors along the arcs $\Ar$.
+and, roughly speaking, measures $\mu$'s failure to arise as a result of
+   an independent causal mechanism along each hyperarc \cite{QIM}.
+% There is not space to motivate it fully, but here are a few nice properties.
+If $\Ar$ is a qualitative Bayesian Network and $\balpha = \mat 1$, for instance,
+   then $\SDef_{\!\Ar,\balpha}(\mu) \ge 0$ with equality
+   iff $\mu$ has the conditional independencies of $\Ar$.
+% It turns out that this information can also be expressed
+% We point the reader to
+%  \citet{pdg-aaai,one-true-loss,pdg-infer}
+% % for further details, examples, and motivation.
+% for more details, motivation, and examples.
+% We encourage the reader to consult previous work for further details.
+%
+With confidence $\gamma \ge 0$ in the structural information overall,
+the $\gamma$-\emph{inconsistency} of $\dg M$ is the smallest possible overall incompatibility of any distribution with $\dg M$, and denoted
+% \vskip-1ex
+\begin{equation}\label{eq:inconsistency}
+   \aar[\big]{\dg M}_\gamma := {\inf_{\mu}\,  \Big( 
+       % \OInc_{(\mathbb P,\bbeta)}(\mu)
+       \OInc_{\dg M}(\mu)
+        +  \gamma \, \SDef_{\!(\Ar,\balpha)}(\mu) \Big).}
+\end{equation}
+\citet{one-true-loss} argues that this inconsistency measure
+   % $\aar{- }_\gamma$
+   \eqref{eq:inconsistency}
+   is a ``universal'' loss function, largely by showing how it
+   specializes to standard loss functions across a wide breadth of contexts.
+It follows that, at least at an abstract level,
+   much of machine learning can be viewed as inconsistency resolution.
+%
+% We take this idea one step further, operationalizing the resolution process.
+We now take this idea a few steps further, by operationalizing the
+   resolution process,
+   % and making it even more expressive with an approximate, local variant
+   and allowing it to be done ``locally''.
+% The latter dramatically expands what computations can be expressed.
+   % significantly  expanding what can be expressed.
+%
+% We operationalize resolution process, and then extend this idea to allow for locality.
+   % how even more can be done if we allow
+%
+   % can be seen as \emph{local} resolution.
+% We then demonstrate that several very different historically important
+   % procedures are special cases.
+    % of our algorithm.
+   % of an algorithm we call \emph{local inconsistency resolution}.
+But what exactly do we mean by that?
+
+
 \section{The Local Inconsistency Resolution (LIR) Algorithm}
+
+There are two distinct senses in which inconsistency resolution can
+   be \emph{local}: we can restrict what we can see, or what we can do about it.
+Correspondingly, there are two ``focus'' knobs for our algorithm:
+   one restricts our \textbf{attention} to the inconsistency of a subset of arcs $A \subseteq \Ar$,
+   % and one that restricts our control to the parameters of a subset
+   and the other restricts our \textbf{control} to only the parameters of a subset
+   $C
+   % (\subseteq A)
+    % \subseteq \Ar$
+    \subseteq \Ar$
+     as we resolve that inconsistency.
+%
+The former makes for an underestimate of the inconsistency that is easier to calculate, while
+% restricting control \ref{item:ctrl-restrict}
+the latter
+makes for an easier optimization problem.
+These restrictions are not just cheap approximations, though:
+   they are also appropriate modeling assumptions for
+   actors that cannot see and control everything at once.
+
+% \subsection{Attention and Control Masks}
+
+Attention and control need not be black and white.
+% More general than selecting $A,C \subseteq \Ar$,
+% A generalization of $A,C \subseteq \Ar$ is
+A more general approach would be to choose
+   % an attention mask $\varphi \in \mathbb R^{\Ar}$ and
+   % a control mask $\chi \in [0,\infty]^{\Ar}$.
+   an \emph{attention mask} $\varphi \in \mathbb R^{\Ar}$ and
+   a \emph{control mask} $\chi \in [0,\infty]^{\Ar}$.
+Large $\varphi(a)$ makes $a$ salient while $\varphi(a) \!=\! 0$ keeps it out of mind;
+similarly, large $\chi(a)$ gives significant freedom to change $a$'s parameters,
+small $\chi(a)$ affords only minor adjustments, and $\chi(a) \!=\! 0$
+   % means we cannot change them at all.
+   prevents change altogether.
+% $\gamma$ may be viewed $\varphi$
+% So, $\chi$ controls locality in the sense of ``local search''.
+%
+% So overall, the algorithm goes like this.
+   % We recieve input in the form of a PDG $\Ctx$, and
+   % a memory layout $\dg M(\Theta)$.
+% We then repeatedly select an attention mask $\varphi$ and a control mask $\chi$, and update
+% Once we select attention and control masks,
+% % We then repeatedly select attention and control masks, and update
+%     we update the parameters we can control so as to reduce the inconsistency of
+%         what is in view.
+% In more detail:
+
+In full generality, we refine the types of $\varphi$ and $\chi$ one step further by breaking the control and attention in each arcs into natural subcomponents. 
+The behavior of the attention mask $\varphi$ described in the previous paragraph matches the role played by $\balpha$ and $\bbeta$ in PDG semantics---which why we needed only to define unweighted PDGs as our basic objects, but require weighted semantics for them.
+The parameter $\gamma$ also describes a form of attention, to the overall qualitative information in the network. Thus we take our control mask $\varphi = (\balpha,\bbeta,\gamma)$ to be a vector of dimension $2|\Ar|+1$, 
+and write $\aar{\varphi \odot \dg M} := \aar{\dg M,\balpha,\bbeta}_\gamma$ to denote the $\gamma$-inconsistency of the weighted PDG $(\dg M, \balpha,\bbeta)$. 
+Because we will typically set $\gamma=0$, rendering $\balpha$ irrelevant (except in \cref{sec:factor-graph} where $\gamma=1$ and $\balpha=\bbeta$), we assume that
+ $\balpha = \bbeta = 1$ unless otherwise specified. 
+% and write $\varphi(a) = 1$ for $\alpha_a = \beta_a = 1$. 
+We also allow $\chi(a)$ to be a vector of dimension $\dim \Theta_a$, so overall $\chi$ is a vector of dimension $\sum_{a \in \Ar} \dim \Theta_a$.
+%
+% A few of our most bizarre examples require that $\varphi$ and $\chi$ to depend on $\theta$.
+
+
+\begin{algorithm}
+   \caption{Local Inconsistency Resolution (LIR)}
+   \label{algo:LIR}
+   \begin{algorithmic}
+       % \STATE \textbf{Input:}
+       %     mutable memory $\dg M(\Theta) $,
+       %     $\gamma \ge 0$,
+       % \STATE ~~~~ procedure $\textsc{Refocus}: () \to PDG \times [0, \infty]^{\Ar(\dg M)}$
+       % \STATE \textbf{Input:}
+       %     context $\Ctx : $ PDG
+       % \STATE ~~~~
+       %     mutable memory $\Mm(\Theta) : $ PPDG
+       \STATE \textbf{Require:} procedure {\sc Refocus}
+       \STATE \textbf{Input:}
+           % context $\Ctx$,~ 
+           % mutable memory $\MThetadense$.
+           knowledge base $\MThetadense$, 
+
+       % \STATE \textbf{Variables:}
+           % state $\theta \in \Theta$,
+           % PDG $\Ctx$.
+       % \smallskip
+
+       \STATE Initialize $\btheta^{(0)} \gets 
+           % \theta^{\text{init}}$;
+           0$;
+       % \STATE Initialze $\theta \gets 0$;
+
+       \FOR{$t = 0, 1, 2, \ldots$}
+           % \STATE $\Ctx \gets \textsc{Refresh}(\Ctx)$;
+           %     $\qquad${\color{gray}\small\texttt{//optional}}
+           \STATE $\varphi, \chi
+               \gets \textsc{Refocus}()$;
+               % \hfill{\color{gray}\small\texttt{//get loci of focus, control}}
+           \STATE $\btheta^{(t+1)} \!\gets \exp_{\btheta^{(\mskip-1mut\mskip-1mu)}}\!
+               % \Big\{\! {-} \chi \odot \nabla_{\!\Theta}
+               \Big\{\! {-} \chi \odot \nabla_{\!\btheta}
+               % \aar[\Big]{ \varphi\odot \MThetadense } \Big\}$;
+               \aar[\Big]{ \varphi\odot \dg M(\btheta) } \Big\}$;
+               % \aar[\big]{ \Ctx + \varphi\odot \dg M(\theta) }_{\!\gamma} \Big\}$;
+       \ENDFOR
+   \end{algorithmic}
+   % \small\color{gray}
+   % Issues. Choice of $\Ctx$ includes choice of $\varphi$, if $\varphi : \Ar(\dg M + \Ctx) \to \mathbb R$.
+   % But if $\varphi : \Ar(\dg M) \to \mathbb R$, they're not overlapping, and $\chi,\varphi: \mathbb R^{\Ar(\dg M)}$ look more like ``duals''.
+   % Of course, we can't then eliminate the refresh instruction.  I also don't like the interpretation as much: if your focus changes in a static environment, I want that to be reflected in $\varphi$, not changing context.
+\end{algorithm}
+
+% At a high level, the algorithm proceeds as follows.
+% The full algorithm, formalized in \cref{algo:LIR},
+The full procedure,
+   formalized in \cref{algo:LIR},
+   is a heuristic algorithm that adjusts the parameters of a parametric PDG $\MThetadense$
+   as to locally resolve inconsistencies as follows.
+First, 
+% receive context PDG $\Ctx$ and 
+% initialize mutable memory $\MThetadense$.
+accept a belief state in the form of a parametric PDG $\dg M(\Theta)$ and initialize the parameters to their default values.
+   % a PPDG that whose parameters we will be changing to reduce its inconsistency with $\Ctx$.
+%In each iteration, choose $\gamma$, a control mask $\chi$ over $\MThetadense$, and an attention mask $\varphi$ over $\MThetadense$ and $\Ctx$.
+In each iteration, choose \emph{focus} consisting of an attention mask $\varphi = (\balpha,\bbeta,\gamma)$ and a control mask $\chi$.
+%
+% Use methods of \citet{pdg-infer} to calculate
+Calculate
+% the inconsistency of $\varphi\odot(\dg M(\Theta) + \Ctx)$,
+$\aar{\varphi\odot\MThetadense}_\gamma$, the inconsistency of
+   the combined context and memory, weighted by attention.
+In many cases (e.g., when $\bbeta \ge \gamma\balpha$) these problems can be solved with techniques in conic optimization \citep{pdg-infer},
+   but this may be intractable unless the attention is narrow enough or one can find a formula for it in closed form.
+Finally, mitigate this local inconsistency
+   by updating mutable memory via (an approximation to) gradient flow,
+   changing the parameters associated with $a$ in proportion to the degree of control $\chi(a)$.
+       % context and memory $\Ctx + \dg M(\theta)$
+% This procedure is fully formalized in \cref{algo:LIR}.
+% This is formalized in \cref{algo:LIR}.
+
+% To describe the algorithm formally in full generality, we also need to des
+% If $\dg M(\Theta)$ is a parametric PDG family, then we write
+% $\dg M.\Ar$
+% $\Ar(\dg M)$
+% for the set of arcs in the underlying PDG, and
+% $\dg M.\boldsymbol\theta$
+
+Before we can run \cref{algo:LIR}
+we must select the procedure 
+% we must supply two more procedures:
+% \textsc{Refresh}, to get new context in online settings (the identity by default), and
+\textsc{Refocus} that provides attention and control masks.
+% Different choices result in different algorithms;
+   % for our purposes,
+We focus primarily on the case where \textsc{Refocus}
+   chooses non-deterministically
+   from a fixed finite set of attention-control mask pairs $\mathbf{F}
+   = \{ (\varphi_i,\chi_i) \}_{i=1}^n
+$, which we call \emph{foci}.
+% The other procedure, \textsc{Refresh} is the identity by defualt, and can be removed in theory by making supplying an infinitely large initial context containing every possible result of refresh.
+% The other procedure,
+% \---that is, procedures that continually recieve inputs.
+
+The ODE described in the final line may be approximated with an inner loop running an iterative
+   gradient-based optimization algorithm.
+Alternatively, if \textsc{Refocus} produces small $\chi$,
+   then it is well-approximated by a single gradient descent step of size $\chi$.
+At the other extreme, if $\chi$ is infinite in every component, then
+   % so long as the parameterizations $\mathbb P$ are log-concave,
+% then $\chi=\infty$ finds
+   % a parameter setting that globally minimizes inconsistency
+we typically expect
+the final line to reduce to
+   \begin{equation}
+       \btheta^{(t+1)} \gets \arg\min_{\btheta} \,
+           \aar[\big]{ \varphi\odot \dg M(\btheta) }\,,
+           % ~~\text{because of}
+           \label{eqn:solve-opt}
+   \end{equation}
+at least in many cases of interest. 
+For example:
+
+\begin{linked}{prop}{logccave}
+   % If $\mathbb P$ is log-concave, then
+   If $\dg M(\Theta)$ is an unweighted parametric PDG whose parameterizations
+   $\mathbb P$ are either constant or unconditional and log-concave and
+   % $\varphi = (\balpha,\bbeta,\gamma) \ge 0$, then for small enough $\gamma$, 
+   $\bbeta \ge \gamma\balpha$,
+   the map $\btheta \mapsto \aar{\dg M(\btheta),\balpha,\bbeta}_\gamma$ is convex.%
+   \onlyfirsttime{\footnote{All proofs can be found in the appendix.}}
+   % and strictly so for $\gamma > 0$.
+\end{linked}
+% \begin{proof}
+%     It is known that $p \mapsto \aar{\dg M + p}$ is convex (see appendix),
+%     and also that $\aar{\dg M + p}$
+%     % Let $\varphi_C$ be components of $\varphi$ that act on the arcs of $\dg M$.
+% \end{proof}
+%
+%
+% We now consider some important speical cases.
+To our surprise (and contradicting a prior version of this paper), we have found that inconsistency is not always convex in the parameters of \emph{conditional} probability distributions---yet we conjecture that \eqref{eqn:solve-opt} holds nevertheless. Determining whether or not $\aar{\dg M + p(Y|X)}$ is quasi-convex in $p$ remains a key open question in the theory of PDGs.
+%
+In the remaining sections, we give a sample of
+some historically important algorithms that are instances of LIR.
+
 \section{Unifying Classical Algorithms as Instances of LIR}
 \subsection{The Classification Setting}
+
+Consider a parametric classifier $p_\theta(Y|X)$, perhaps
+   arising from a neural network whose final layer is a softmax,
+   and suppose we also have a labeled example $(x,y)$. 
+Let's capture this situation with a parametric PDG.
+Since $\V Y$ is a discrete label space space, we regard labels as unconditional distributions over $Y$, viewing ``hard'' labels such as our $y \in \V Y$ as vertices of this simplex, while also allowing for label smoothing \citep[see][for an overview]{muller2019does}.
+%
+Doing the same for $x$ may be intractable, but fortunately is not necessary; in the typical case where the space of inputs $\V\!X$ is itself a manifold (e.g., color images in $[0,1]^{W\times H\times 3}$), we can regard a value $x \in \V\!X$ as parameterizing a deterministic unconditional probability over $X$.
+To communicate this deterministic parameterization visually, we use a double-headed arrow, writing
+$\smash{
+\tikz[center base]{\node[dpadinline](X) {$X$}; \draw[arr1, <<-](X) to node[fill=white,inner sep=1pt,pos=0.65]{$x$} +(-1.1,0);}
+}$.
+% Viewing $\Theta$ as a variable, the discrimainator
+% as a conditional probability $p(Y| X, \Theta)$.
+% Together with a labeled sample $(x,y)$,
+%  and parameter setting $\theta$,
+Combining the parametric classifier $p_\theta(Y|X)$ with the sample $(x,y)$,
+   we get a parametric PDG $\dg M(x,y,\theta) := $
+%
+% \[ %%%>>  EXPLICIT PARAMTERIZATION; THETA IS A VARIABLE  <<%%
+%     \dg M := ~~
+%     \begin{tikzpicture}[center base]
+%         \node[dpad1] (X) at (0,0) {$X$};
+%         \node[dpad1] (Y) at (2,0) {$Y$};
+%         \node[dpad1] (T) at (1, 0.7){$\Theta$};
+%         \cmergearr[arr1]XTY{1.2,0}
+%         \draw[arr1, <<-] (T) to node[above,pos=0.65]{$\theta$} +(-1,0);
+%         \draw[arr1, <<-] (X) to node[above,pos=0.65]{$x$} +(-1,0);
+%         \draw[arr1, <-] (Y) to node[above,pos=0.65]{$y$} +(1,0);
+%         \node[anchor=south,inner sep=2pt] at (0.8,0) {$p$};
+%     \end{tikzpicture},
+% \]
+\begin{equation}
+% $
+   \;
+   \begin{tikzpicture}[baseline=-0.6ex]
+       % \node[dpad1] (X) at (0,0) {$X$};
+       % \node[dpad1] (Y) at (1.5,0) {$Y$};
+       % \draw[arr1, <<-] (X) to node[above,pos=0.65]{$x$} +(-1,0);
+       % \draw[arr1, <-] (Y) to node[above,pos=0.65]{$y$} +(1,0);
+       \node[dpadinline] (X) at (0,0) {$X$};
+       \node[dpadinline] (Y) at (1.1,0) {$Y$};
+       \draw[arr1, <<-] (X) to node[above,pos=0.65]{$x$} +(-0.85,0);
+       \draw[arr1, <-] (Y) to node[above,pos=0.65,inner sep=2pt]{$y$} +(0.75,0);
+       \draw[arr1] (X) to
+           node[above] {$p_\theta$} (Y);
+   \end{tikzpicture}
+   \quad\cong\quad
+       \begin{tikzpicture}[center base]
+       \def\spray{.24}
+       \node[dpad0] (X) at (0,-0.4) {$X$};
+       \node[dpad0] (Y) at (1.2,0) {$Y$};
+       \node[dpad0] (T) at (0, 0.4){$\Theta$};
+       % \draw[arr1,-,shorten >=3pt,transform canvas={yshift=-1pt}, defv,dashed,ultra thick] (X) to (Y);
+       % \draw[arr1,-,shorten >=3pt,transform canvas={yshift=0.75pt}, atkv] (X) to (Y);
+       % \draw[arr1] (X) to node[above] {$p$} (Y);
+       \mergearr[arr1,gray]XTY
+       \node[above right=0pt and 0pt of center-XTY]{$p$};
+       \draw[arr1, <<-] (X) to node[above,pos=0.65]{$x$} +(-0.85,0);
+       \draw[arr1, <<-] (T) to node[above,pos=0.65]{$\theta$} +(-0.85,0);
+       \draw[arr1, <-] (Y) to node[above,pos=0.65,inner sep=2pt]{$y$} +(0.75,0);
+   \end{tikzpicture}
+   \label{pdg:classfication}
+% $
+\end{equation}
+whose observational inconsistency is
+$
+   % \aar{\dg M(x,y,\theta)}_0 = 
+   - \log p_\theta(y|x)
+$, the standard training objective for such a classifier \cite{one-true-loss}.
+% This inconsistency is irreducible, since removing any of
+% If $X$ and $\Theta$ are expressive enough, any of the four edges will make the inconsistency disappear
+% All four components play a major role in giving rise to this inconsistency.
+Each cpd plays major role in this inconsistency.
+% Fixing all of $\dg M$ as our context,
+% Fixing uniform global attention $\varphi = 1$,
+What happens when we resolve this it
+with control over different arcs?
+
+\begin{itemize}[nosep,itemsep=3pt, left=0.5em]
+   \item Adjusting $\theta$
+   % (i.e, $C = \{\theta\}$)
+   amounts to \textbf{training} the network in the standard way.
+       % In more detail, $\chi$
+       % In this case, the value $\chi$ of the control mask corresponds to the number of optimization iterations.
+       In this case, the value $\chi$ of the control mask corresponds roughly
+       to the product of the learning rate and the number of optimization iterations spent on the example $(x,y)$.
+
+   \item Adjusting $y$
+   % (i.e., $C = \{y\}$)
+   amounts to \textbf{inference}:
+   % is like a  forward pass, in that it adjusts $y$ to match distribution $p_\theta(Y|x)$.
+   it adjusts $y$ to match distribution $p_\theta(Y|x)$.
+       % In particular, $\chi=\infty$ corresponds to selection $y(
+       % If there is also a qualitative edge that states that $Y$ is deterministic
+
+   \item Adjusting $x$
+   % (i.e. $C = \{x\}$ )
+   amounts to \textbf{forming an adversarial example}: it makes small changes to the input
+   until the (fixed) network gives it the desired label.
+   % amounts to constructing an adversarial example---that is, fixing the network
+   % If $X$ represents images, for example, this means fixing the network and making small adjustments to the image until the network assigns it the desired label.
+\end{itemize}
+
+Some readers may find the last point surprising. 
+While adversarial examples \citep{goodfellow2014explaining} are often presented as weird quirk of neural networks,
+   they are, together with training and inference, one of the three basic resolutions ways of resolving this simple inconsistency.
+% 
+The sustained interest of the machine learning community on adversarial examples
+   may appear to be a cultural phenomenon,
+   % but in some sense it is .
+   % but at a mathematical level, it is no accident.
+   but at a mathematical level, it is no accident \citep{shafahi2018adversarial}.
+At this level of abstraction, there is no difference between
+   the network parameters and inputs.
+% We can highlight this visually by observing that, after adding L2 regularization \cite{one-true-loss}, translating the previous diagram to an ordinary PDG gives us the symmetrical:
+Making the parameterization of $p$ explicit and adding L2 regularization,
+the symmetry
+% between parameters and inputs
+becomes striking (see \cref{fig:adv}, right).
+
+
+
+With minor modifications to $\dg M(x,y,\theta)$, we can capture variations of training procedures.
+
+% \textbf{classification}
+% Furthermore, these .
+% with memory $\dg M(\Theta) = p$ and context
+%  $y_i$ for every possible
+% \textbf{adversarial attack in practice.}
+% Take mutable memory to also include a special arc $\ed {\mathit{adex}}{}X$,
+% and that is the focus
+% \textbf{A more realistic classification setting.}
+\textbf{Stochastic Gradient Descent (SGD).} \label{sec:SGD}
+Take the mutable state to be the classifier $p$ as before.
+Define $\textsc{Refresh}$ so that it draws a batch of samples $\{(x_i,y_i)\}_{i=1}^m$,
+and returns a PDG with a single arc describing their emperical distribution $d(X,Y)$, and
+% Define $\textsc{Refocus}$ so that it sets $\varphi = \{d \mapsto \infty, p \mapsto 1\}$
+%     (corresponding to high confidence in the data, default confidence in the still-training classifier)
+let $\textsc{Refocus}$ be such that $\varphi(d) = \infty$
+   (reflecting high confidence in the data).
+If $\eta := \chi(p) \varphi(p)$ is small, then
+   LIR reduces to SGD with batch size $m$ and learning rate $\eta$.
+
+
+% \textbf{Adversarial training views.}
+% \textbf{SGD: batches as context.}
+\begin{figure}
+   \centering
+   % \tikzset{atkv/.style={red!50!white},defv/.style={green!50!gray}}
+   \tikzset{atkv/.style={green!70!black},defv/.style={blue}}
+   \begin{tikzpicture}[center base]
+       % \node[dpad1] (X) at (0,1) {$X$};
+       % \node[dpad1] (X') at (0,0) {$X'$};
+       \node[dpad1] (X) at (0,0) {$X$};
+       \node[dpad1] (Y) at (1.3,0) {$Y$};
+
+       \draw[arr1,-,shorten >=3pt,transform canvas={yshift=-1pt}, defv,dashed,ultra thick] (X) to (Y);
+       \draw[arr1,-,shorten >=3pt,transform canvas={yshift=0.75pt}, atkv] (X) to (Y);
+       \draw[arr1] (X) to node[above] {$p$} (Y);
+       % \draw[arr1] (X) to node[right] {$\mathcal N$} (X');
+       % \node[dpad1] (T) at (1, 0.7){$\Theta$};
+       % \cmergearr[arr1]XTY{1.2,0}
+       % \draw[arr1, <<-] (T) to node[above,pos=0.65]{$\theta$} +(-1,0);
+       \coordinate (xend) at ($(X)+(-1.1,0.5)$);
+       \draw[arr1,-,shorten <=5pt,transform canvas={yshift=0.75pt}, atkv] (X) to (xend);
+       \draw[arr1, <-] (X) to
+           %  node[left,pos=0.85]{$\mathcal N(x,1)$}
+            node[above,pos=0.65]{$x$}
+            (xend);
+       \coordinate (x'end) at ($(X)+(-1.1,-0.5)$);
+       \draw[arr1,-,ultra thick,shorten <=4pt,transform canvas={yshift= 1pt}, atkv, dashed] (X) to (x'end);
+       \draw[arr1,-,shorten <=3pt,transform canvas={yshift= -0.75pt}, defv] (X) to +(x'end);
+       \draw[arr1, <<-] (X) to node[above,pos=0.65]{$x'$} (x'end);
+       \coordinate (yend) at ($(Y)+(1,0.5)$);
+       \coordinate (y'end) at ($(Y)+(1,-0.5)$);
+       \draw[arr1,-,shorten <=6pt,transform canvas={yshift=-0.75pt}, defv] (Y) to (yend);
+       \draw[arr1, <<-] (Y) to node[above,pos=0.65]{$y$} (yend);
+       \draw[arr1,-,shorten <=6pt,transform canvas={yshift=0.75pt}, atkv] (Y) to (y'end);
+       \draw[arr1, <<-] (Y) to node[above,pos=0.65]{$y'$} (y'end);
+   \end{tikzpicture}
+   $\cong$
+   \begin{tikzpicture}[center base]
+       \def\spray{.24}
+       \node[dpad1] (X) at (0,-0.6) {$X$};
+       \node[dpad1] (Y) at (1.4,0) {$Y$};
+       \node[dpad1] (T) at (0, 0.6){$\Theta$};
+       % \draw[arr1,-,shorten >=3pt,transform canvas={yshift=-1pt}, defv,dashed,ultra thick] (X) to (Y);
+       % \draw[arr1,-,shorten >=3pt,transform canvas={yshift=0.75pt}, atkv] (X) to (Y);
+       % \draw[arr1] (X) to node[above] {$p$} (Y);
+       \mergearr[arr1]XTY
+       \node[above right=0pt and 0pt of center-XTY]{$p$};
+       \coordinate (tend) at ($(T)+(-1.1,\spray)$);
+       \draw[arr1,-,ultra thick,shorten <=7pt,transform canvas={yshift= -1.0pt}, defv, dashed] (T.160) to (tend);
+       \draw[arr1,-,shorten <=3pt,transform canvas={yshift= 0.7pt}, atkv] (T.160) to (tend);
+       \draw[arr1, <<-] (T.160) to node[left,pos=0.9]{$\theta$} (tend);
+       \coordinate (nend) at ($(T)+(-1.1,-\spray)$);
+       % \draw[arr1,-,shorten <=3pt,transform canvas={yshift=-0.7pt}, defv] (T.-160) to (nend);
+       \draw[arr1, <-, defv] (T.-160) to
+           node[below,inner sep=2px,pos=0.7]{\scalebox{0.8}{$\mathcal N(0,1)$}} (nend);
+       \coordinate (xend) at ($(X)+(-1.1,\spray)$);
+       % \draw[arr1,-,shorten <=3pt,transform canvas={yshift=0.7pt}, atkv] (X.160) to (xend);
+       \draw[arr1, <-, atkv] (X.160) to
+           % node[above,pos=0.65]{$x$} (xend);
+           node[above,inner sep=1px,pos=0.7]{\scalebox{0.8}{$\mathcal N(x,1)$}} (xend);
+       \coordinate (x'end) at ($(X)+(-1.1,-\spray)$);
+       \draw[arr1,-,ultra thick,shorten <=6pt,transform canvas={yshift=1.0pt}, atkv, dashed] (X.-160) to (x'end);
+       \draw[arr1,-,shorten <=3pt,transform canvas={yshift= -0.7pt}, defv] (X.-160) to (x'end);
+       \draw[arr1, <<-] (X.-160) to node[left,pos=0.9]{$x'$} (x'end);
+       \coordinate (yend) at ($(Y)+(1,\spray)$);
+       \coordinate (y'end) at ($(Y)+(1,-\spray)$);
+       % \draw[arr1,-,shorten <=3pt,transform canvas={yshift=-0.7pt}, defv] (Y.35) to (yend);
+       \draw[arr1, <<-,defv] (Y.35) to node[above,pos=0.65]{$y$} (yend);
+       % \draw[arr1,-,shorten <=3pt,transform canvas={yshift=0.7pt}, atkv] (Y.-35) to (y'end);
+       \draw[arr1, <<-,atkv] (Y.-35) to node[below,pos=0.65]{$y'$} (y'end);
+   \end{tikzpicture}
+   \caption{Two equivalent illustrations of adversarial training.}
+   \label{fig:adv}
+\end{figure}
+\textbf{Adversarial training.}
+% Now, include in the mutable state
+% Let's now extend our mutible state to include
+% Now consider an extended PDG
+Suppose we want to slightly alter $x$ to obtain $x'$ that is classified as $y'$ instead of $y$.
+Adding $x'$ and $y'$ to $\dg M$ and relaxing $\p_x$ to be a Gaussian centered $x$ rather than a point mass,
+we get the PPDG on the left of \cref{fig:adv}.
+% \[
+% \begin{tikzpicture}[center base]
+%     % \node[dpad1] (X) at (0,1) {$X$};
+%     % \node[dpad1] (X') at (0,0) {$X'$};
+%     \node[dpad1] (X) at (0,0) {$X$};
+%     \node[dpad1] (Y) at (2,0) {$Y$};
+%
+%     \draw[arr1,-,shorten >=3pt,transform canvas={yshift=-1pt}, blue,dashed,ultra thick] (X) to (Y);
+%     \draw[arr1,-,shorten >=3pt,transform canvas={yshift=0.75pt}, red] (X) to (Y);
+%     \draw[arr1] (X) to node[above] {$p$} (Y);
+%     % \draw[arr1] (X) to node[right] {$\mathcal N$} (X');
+%     % \node[dpad1] (T) at (1, 0.7){$\Theta$};
+%     % \cmergearr[arr1]XTY{1.2,0}
+%     % \draw[arr1, <<-] (T) to node[above,pos=0.65]{$\theta$} +(-1,0);
+%     \coordinate (xend) at ($(X)+(-1.1,0.5)$);
+%     \draw[arr1,-,shorten <=2pt,transform canvas={yshift=0.75pt}, red] (X) to (xend);
+%     \draw[arr1, <-] (X) to
+%         %  node[left,pos=0.85]{$\mathcal N(x,1)$}
+%          node[above,pos=0.65]{$x$}
+%          (xend);
+%     \coordinate (x'end) at ($(X)+(-1.1,-0.5)$);
+%     \draw[arr1,-,ultra thick,shorten <=4pt,transform canvas={yshift= 1pt}, red, dashed] (X) to (x'end);
+%     \draw[arr1,-,shorten <=4pt,transform canvas={yshift= -0.75pt}, blue] (X) to +(x'end);
+%     \draw[arr1, <<-] (X) to node[above,pos=0.65]{$x'$} (x'end);
+%     \coordinate (yend) at ($(Y)+(1,0.5)$);
+%     \coordinate (y'end) at ($(Y)+(1,-0.5)$);
+%     \draw[arr1,-,shorten <=2pt,transform canvas={yshift=-0.75pt}, blue] (Y) to (yend);
+%     \draw[arr1, <<-] (Y) to node[above,pos=0.65]{$y$} (yend);
+%     \draw[arr1,-,shorten <=2pt,transform canvas={yshift=0.75pt}, red] (Y) to (y'end);
+%     \draw[arr1, <<-] (Y) to node[above,pos=0.65]{$y'$} (y'end);
+% \end{tikzpicture}
+% \]
+A LIR iteration whose focus consists of the edges marked in green (with control over the dashed green edge)
+   is an adversarial attack with Euclidean distance \cite{biggio2013advattk}.
+% Taking the blue view, on the other hand,
+The blue focus, by contrast, ``patches'' the adversarial example by
+   adjusting the model parameters to again classify it correctly.
+Thus, LIR that alternates between the two and refreshes $(x,y,y')$ is adversarial training, a standard defense to adversarial attacks \cite{goodfellow2014explaining}.
+%
+Thus, it is just as sensible to train the inputs, as the network \cite{FNNS}.
+
+% \textbf{The Adam Optimizer.}
+% \oliver{I think this should be straightforward and powerful addition: we just need to use the control mask to give the appropriate adaptive learning rates. }
+% \mehran{How would you retain memory for momentum and exponential moving average of gradient norms?}
+
+% (S, right.)
+% \[
+%     \begin{tikzpicture}[center base,atkv/.style={red!50!white},defv/.style={green!50!gray}]
+%         \def\spray{.24}
+%         \node[dpad1] (X) at (0,0) {$X$};
+%         \node[dpad1] (Y) at (2,0.5) {$Y$};
+%         \node[dpad1] (T) at (0, 1){$\Theta$};
+%         % \draw[arr1,-,shorten >=3pt,transform canvas={yshift=-1pt}, defv,dashed,ultra thick] (X) to (Y);
+%         % \draw[arr1,-,shorten >=3pt,transform canvas={yshift=0.75pt}, atkv] (X) to (Y);
+%         % \draw[arr1] (X) to node[above] {$p$} (Y);
+%         \mergearr[arr1]XTY
+%         \coordinate (tend) at ($(T)+(-1.1,\spray)$);
+%         \draw[arr1,-,ultra thick,shorten <=3pt,transform canvas={yshift= -1.5pt}, defv, dashed] (T.160) to (tend);
+%         \draw[arr1,-,shorten <=3pt,transform canvas={yshift= 1.0pt}, atkv] (T.160) to (tend);
+%         \draw[arr1, <<-] (T.160) to node[above,pos=0.65]{$\theta$} (tend);
+%         \coordinate (nend) at ($(T)+(-1.1,-\spray)$);
+%         % \draw[arr1,-,shorten <=3pt,transform canvas={yshift=-0.7pt}, defv] (T.-160) to (nend);
+%         \draw[arr1, <-, defv] (T.-160) to node[left,pos=0.95]{$\mathcal N(0,1)$} (nend);
+%         \coordinate (xend) at ($(X)+(-1.1,\spray)$);
+%         % \draw[arr1,-,shorten <=3pt,transform canvas={yshift=0.7pt}, atkv] (X.160) to (xend);
+%         \draw[arr1, <-, atkv] (X.160) to
+%             % node[above,pos=0.65]{$x$} (xend);
+%             node[left,pos=0.95]{$\mathcal N(x,1)$} (xend);
+%         \coordinate (x'end) at ($(X)+(-1.1,-\spray)$);
+%         \draw[arr1,-,ultra thick,shorten <=3pt,transform canvas={yshift=2pt}, atkv, dashed] (X.-160) to (x'end);
+%         \draw[arr1,-,shorten <=3pt,transform canvas={yshift= -1.0pt}, defv] (X.-160) to (x'end);
+%         \draw[arr1, <<-] (X.-160) to node[below,pos=0.65]{$x'$} (x'end);
+%         \coordinate (yend) at ($(Y)+(1,\spray)$);
+%         \coordinate (y'end) at ($(Y)+(1,-\spray)$);
+%         % \draw[arr1,-,shorten <=3pt,transform canvas={yshift=-0.7pt}, defv] (Y.35) to (yend);
+%         \draw[arr1, <<-,defv] (Y.35) to node[above,pos=0.65]{$y$} (yend);
+%         % \draw[arr1,-,shorten <=3pt,transform canvas={yshift=0.7pt}, atkv] (Y.-35) to (y'end);
+%         \draw[arr1, <<-,atkv] (Y.-35) to node[below,pos=0.65]{$y'$} (y'end);
+%     \end{tikzpicture}
+% \]
+
+
 \subsection{The EM Algorithm and VAEs}
+
+Suppose we have a latent variable model $p_\theta(Z,X)$
+describing the joint distribution of an observable variable $X$ and a latent one $Z$.
+% Let $x$ be an observation of $X$, as before.
+%
+Given observations of the form $X{=}x$,
+how can we learn model parameters $\theta$ despite the missing data $z$?
+There is an overwhelmingly standard answer that has independently arisen in many different domains:
+the EM algorithm \citep{dempster1977maximum,mclachlan2008algorithm}.
+% It iteratively computes
+% So called because it
+% The name of the EM is descriptive:
+The EM algorithm iteratively improves an estimate of $\theta$ as follows: first estimate an 
+\textbf Expectation over the missing values $z$ (fixing the current estimate $\theta$), and then perform a 
+\textbf Maximization over $\theta$ to update the parameters;
+% so altogether it iteratively computes
+altogether this amounts to computing:
+\[
+   \theta^{(t+1)}_{\text{EM}}
+           := \arg\max_{\theta}\; \Ex\nolimits_{z\sim p(Z|x,\theta_{\text{EM}}^{(t)})} \big[ \,\log p(x, z | \theta) \,\big].
+\]
+% \[
+%     \dg M := ~~
+%     \begin{tikzpicture}[center base]
+%         \node[dpad1] (Z) {$Z$};
+%         \node[dpad1,above=.3 of Z] (X) {$X$};
+%         \coordinate (A) at ($ (X)!.5!(Z) + (-0.7,0)$);
+%         \node[dpad1,left=.5 of A] (T) {$\Theta$};
+%         % \coordinate (A) at ($ (X)!.5!(Z) + (-1.1,0)$);
+%         \draw[arr1] (T) -- node[above]{$p$} (A) -- (X);
+%         \draw[arr1] (T) -- (A) -- (Z);
+% %
+%         \draw[arr2, <<-] (X) --  node[above,pos=0.8]{$ x$} ++(0.9, 0);
+
+%         \begin{scope}[red]
+%             \draw[arr2, <<-] (T) --  node[above,pos=0.8]{$\theta$} ++(-0.9, 0);
+%             \draw[arr2, <-] (Z) --  node[above,pos=0.8]{$q$} ++(0.9, 0);
+%         \end{scope}
+% % 			\draw[arr2, <-] (Z) -- node[above,pos=0.6]{$ q^{\{\beta =\infty\}}$} ++(-0.9, 0);%
+%         % \ar[r,"p"] \& Z \ar[r,"p", bend left] \& X \ar[l,"q", bend left] \& \ar[l, two heads, "x"']
+%     \end{tikzpicture}
+% \]
+
+\begin{linked}{prop}{LIR-EM}
+   % If there are no local minima,
+   % If $\theta \mapsto p_\theta(x,Z)$ is log-convex,
+   %  then
+   % Under mild assumptions,
+   % alternating between focus $\theta$ and focus $q$ with $\chi=\infty$
+   % LIR on the PDG
+   % \[
+   \textsc{LIR}$\Bigg(\!
+       \begin{tikzpicture}[center base]
+           \node[dpad0] (Z) {$Z$};
+           \node[dpad0,left=.5 of Z] (X) {$X$};
+           \draw[arr2, <<-] (X) --  node[above,pos=0.8]{$ x$} +(-0.9, 0);
+           \coordinate (A) at ($ (X)!.5!(Z) + (0,0.8)$);
+           \draw[arr1] (A) -- node[left, inner sep=3pt]{$p$} ++(0,-0.35) -- (Z);
+           \draw[arr1] (A) -- ++(0,-0.35) -- (X);
+%
+           % \draw[arr2, <<-] (X) --  node[above,pos=0.8]{$ x$} ++(0.9, 0);
+           \draw[arr2, <-] (Z) --
+               node[above,pos=0.65, inner sep=2pt]{$q$}
+               node[below,pos=0.7, inner sep=2pt]{${\color{gray}\scriptscriptstyle(\infty)}$}
+               ++(0.9, 0);%
+           %\scriptstyle q^{\{\beta =\infty\}}
+           % \ar[r,"p"] \& Z \ar[r,"p", bend left] \& X \ar[l,"q", bend left] \& \ar[l, two heads, "x"']
+       \end{tikzpicture}
+   \!\Bigg)$
+       % \]
+   % in which {\sc Refocus} fixes $\varphi, \gamma = \mat 1$
+   in which {\sc Refocus} re-samples $x$ 
+   and alternates between
+   % $\chi = \infty \mathbbm1_{\{\theta\}}$ and $\mathbbm1_{\{q\}}$
+   full control of $p$ and $q$
+   implements EM, in that
+   $\theta_{\text{EM}}^{(t)} = \theta_{\text{LIR}}^{(2t)}$%
+   % for all $t \in \mathbb N$
+   .%
+   \onlyfirsttime{\footnote{The result can also be readily adapted to an entire dataset by replacing $x$ with a high confidence empirical distribution, or mini-batched as in \cref{sec:SGD}.}}
+   % $ \theta^{(t+1)}
+\end{linked}
+
+% At a technical level, this is essentially a restatement of a theorem
+% This result was first observed by
+% A result like this was first observed by
+This result is closely related to one due to
+% This result is a close relative of a due to
+\citet{neal1998view}, who view it as an intuitive explanation of why the EM algorithm works.  Indeed, it is obvious in this form that every adjustment reduces the overall inconsistency, and that
+% It also captures fractional EM when $\chi < \infty$.
+the M step need not fully solve the maximization problem, but merely make progress.
+% (\citeyear{neal1998view})
+% By monotonicity, it is also clear that
+
+\paragraph{Variational inference as LIR.}
+This form of the EM algorithm is closely related to variational inference.
+Indeed, the inconsistency of the PDG in \cref{prop:LIR-EM} is equal to the evidence lower bound (ELBO), the optimization target for variational methods.
+Furthermore, allowing $q$ to depend on $x$ 
+% analogous choices applied to the analysis of \citet{one-true-loss}
+% to obtain a concrete training algorithm for variational autoencoders.
+and breaking up $p(X,Z) = p(Z)d(X|Z)$ into two separate arcs yields a PDG containing the data of a variational autoencoder, or VAE \cite{kingma2013autoencoding}, and the resulting inconsistency is the variant of the ELBO used to train VAEs \cite{one-true-loss}.  It follows that LIR where we control the encoder and decoder (but not the prior) and attend to various mini-batches of samples, trains a VAE with stochastic gradient descent. 
+%
+\emph{Mean-field} variational methods are ones where the latents $Z = (Z_i)_{i=1}^n$ are real-valude, and the variational family is restricted to those of the form $q(Z) = \prod_{i=1}^n q_i(Z)$.
+
+
 \subsection{Generative Adversarial Networks}
+\def\pdata{p_{\mathrm{data}}}
+\def\real{{\mathrm{real}}}
+\def\fake{{\mathrm{fake}}}
+LIR can also capture the procedure for training Generative Adversarial Networks, or GANs \cite{goodfellow2020generative}.
+% The general idea is that
+The goal is to train a generator network $G$ to generate images that cannot be distinguished
+   from real ones.
+%
+% In a GAN, we have a generator $G$ that represents a distribution over fake images,
+% an empirical distribution of real images, and a discriminator that
+% aims to classify images as real or fake.
+% The training process involves a second network,
+Formally, let $X$ be either a generated image $X_{\fake}\sim G$ or one from a dataset
+$X_\real \sim \pdata$, based on the outcome of a fair coin $C$.
+A discriminator $D$ then predicts the outcome $C$ of the coin flip from the image $X$.
+%
+% Consider the PDG
+% Finally, the generator believes that $C$ is not determined by $X$,
+%     which can be captured with a purely qualitative edge with $\alpha=-1$.
+% These components are summarized by the PDG
+The only additional ingredient we will need that is not explicit in the original formulation is a belief $e$ that the coin is equally likely heads as tails given $X$---intuitively, representing the goal of the generator and the opposite of the goal of the discriminator.
+% state of affairs is summarized below.
+All of these pieces of probabilistic information can be summarized by the PDG below.
+% , where ``!'' means $\beta=\infty$, i.e, full confidence.
+%
+% \vspace{-1ex}
+\[
+   % \dg M:=
+   \dg M(\Theta) :=
+   \begin{tikzpicture}[center base,Dcolor/.style={green!70!black},Gcolor/.style={blue}]
+       % \node[dpad1](Z) at (0, 0.6){$Z$};
+       \node[dpad1](Xfake) at (0,1) {$X_{\fake}$};
+       \node[dpad1](Xreal) at (0,0){$X_{\real}$};
+       \node[dpad1](X) at (2.1,0){$X$};
+       % \node[dpad1](C) at (2,1){Real / Fake};
+       % \node[dpad1](C) at (2.5,1.1){$\mathrm{Real / Fake}$};
+       \node[dpad1](C) at (2.4,1.0){$C$};
+
+       % \draw[arr, <-] (Z) to node[above,pos=0.6]{$\cal N!$} +(-1.2,0);
+       %%%%% G %%%%%%
+       \draw[arr1,-,line width=1.3pt,transform canvas={yshift=1pt},dashed,Gcolor, shorten <=5pt] (Xfake) to +(-1.5,0);
+       \draw[arr1, <-] (Xfake) to node[above,pos=0.6]{$G$}
+           % node[below,pos=0.7,inner sep=1.5pt]{\color{gray}\scriptsize$(\beta{=}1)$}
+           +(-1.5,0);
+       \draw[arr1, <-] (Xreal) to node[above,pos=0.6]{$\pdata!$} +(-2,0);
+       % \draw[arr] (X.0) to[out=0,in=-80,looseness=1.6] node[right]{$D$} (C.-35);
+       % \draw[arr] (X.10) to[out=10,in=-90,looseness=1.4] node[left]{$\frac12$} (C.-45);
+       %%%%%%%%%%%%%%%%%%%%%%%%%%%%% D %%%%%%%%%%%%%%%%%%
+       \draw[arr,-,line width=1.3pt,transform canvas={xshift=1pt}, Dcolor,dashed]
+                  (X.-2) to[out=0,in=-20,looseness=2.21] (C.-28);
+       \draw[arr] (X.0) to[out=0,in=-20,looseness=2.2] node[right]{$D$} (C.-30);
+       % \draw[arr] (X.10) to[out=10,in=-45,looseness=1.6] node[left]{$\frac12$} (C.-45);
+       %%%%%%%%%%%%%%%%%%%%%%%%%%% e %%%%%%%%%%%%%%%%%%%%
+       \draw[arr1,-,line width=1.1pt,transform canvas={xshift=0.5pt}, Gcolor,shorten >=3pt]
+           (X.10) to[out=10,in=-55,looseness=1.6] (C.-50);
+       \draw[arr1,-,line width=1.1pt,transform canvas={xshift=-0.8pt}, Dcolor,shorten >=3pt,shorten <=1pt]
+           (X.10) to[out=10,in=-55,looseness=1.6] (C.-50);
+       \draw[arr1]
+           % (X)
+           (X.10)
+           to[out=10,in=-55,looseness=1.6]
+           % node{\scalebox{0.8}{\contour{white}{\small$50/50$}}}
+           node[left,pos=0.6,inner sep=4pt]{$e$}
+           (C.-50);
+       % \draw[arr] (X) to[] node[]{\small50/50} (C);
+       % % \cmergearr[->>]{Xfake}{Xreal}{X}{1.2,0.1}
+       \coordinate (ctr) at (1.2,0.1);
+       \draw[arr1,-,shorten >=0pt] (Xfake) to[bend right=8] (ctr);
+       \draw[arr1,-,shorten >=0pt] (Xreal) to[bend left=5] (ctr);
+       \draw[arr1,-,shorten >=0pt] (C) to[in=150,out=180,looseness=1.5](ctr);
+       \draw[arr1,->>,shorten <=0pt] (ctr) to[bend right=10](X);
+       \draw[arr1, <-] (C) to node[above,pos=0.6]{\small$50/50!$} +(1.5,0);
+\end{tikzpicture}
+\]
+GAN training is often written as a 2-player game
+$
+   \min_{G} \max_{D}  \mathcal L^{\text{GAN}}(G,D)
+$, where
+\[
+\mathcal L^{\text{GAN}}(G,D) = 
+   % \Ex_{\vphantom{|}x \mathrlap{\sim \pdata}}
+   \Ex\nolimits_{x \sim \pdata}
+   [\,\log D(x)\,] + \Ex\nolimits_{x' \sim G} [\,\log (1- D(x'))\,].
+\]
+% Now consider the two perspectives: the generator's perspective $G$, with
+% \textbf{The Discriminator's View.}
+% % According to the discriminator,
+% \textbf{The Generator's View.}
+% The generator controls t
+
+\textbf{The Discriminator's Focus.}
+The discriminator has full control over $D$, and attends to
+everything but $e$.
+That inconsistency of this PDG is what might be called
+the discriminator's objective:
+% the KL divergen
+% $\Ex[ \kldiv{D(C|X)}]$
+the expected KL divergence from $D$ to the optimal discriminator.
+If $D$ also disbelieves that any image is equally likely to be fake as real
+(by chosing $\varphi(e) = -1$),
+% (i.e., $\begin{matrix}\varphi(e) = -1\\ \varphi(D) =+1\end{matrix}$),
+then the inconsistency becomes $-\mathcal L^{\text{GAN}}$.
+% $D(C|X)$ to the
+% true probabililty of $C$ given $X$.
+% while the generator has control over $G$.
+
+\textbf{The Generator's Focus.}
+The generator has control over $G$.
+If it ignores $D$ attends only to $e$, the inconsistency
+is the Jensen-Shannon Divergence between $G$ and $\pdata$.
+If the generator also disbelieves the discriminator $D$
+(i.e., $ \varphi(D) =-1$),
+then the inconsistency becomes $+\mathcal L^{\text{GAN}}$.
+
+Standard practice is to use small $\chi(G)$ and large $\chi(D)$.
+
+
 \subsection{Message Passing}
+   \label{sec:factor-graph}
+
+% \paragraph{Belief Propogation.}
+% % Let $\X$ be a set of variables,
+% Consider a factor graph
+A \emph{factor graph} over a set of variables $\X$ is a set of factors
+% Let $\X$ be a set of variables, and consider a set of factors
+$\Phi = \{ \phi_a : \mathbf X_a \to \mathbb R_{\ge 0}\}_{a \in \Ar}$,
+where each $\mathbf X_a \subseteq \mathcal X$ is called the \emph{scope} of $a$.
+Conversely, for $X \in \X$, let
+$\partial X
+    := \{a \in \Ar : X \in \mat X_a\}
+$ be the set of factors with $X$ in scope.
+The factor graph
+$\Phi$ specifies a distribution
+$\Pr_\Phi(\X) \propto \prod_a \phi_a(\mat X_a)$, and
+% $\Pr_\Phi = \frac1Z \prod_a \phi_a(\mat X_a)$, where $Z$ is a normalization constant,and $\log Z$ is  and
+corresponds to a PDG
+%
+% The PDG that corresponds to
+% this factor graph is $\Phi$ is
+\[
+% $
+   \dg M_\Phi = \Big\{ \begin{tikzpicture}[center base]
+       \node[dpadinline] (X) {$\mathbf X_a$};
+       \draw[arr,<-] (X) to node[above, pos=0.65,inner sep=3pt]{$\propto \smash{\phi_a}$}
+           node[below,pos=0.7,inner sep=1.5pt]{\color{gray}\scriptsize$(\alpha,\beta{=}1)$} +(-1.4,0);
+   \end{tikzpicture}~\Big\}_{a \in \Ar}
+% $
+\]
+% ~\parbox{0.45\linewidth}{
+% \!\!
+that specifies the same distribution $\Pr_\Phi(\X)$ when $\gamma{=}1$.
+% }
+% be the corresponding PDG.
+% There are several different variants of beleif propogation;
+% each can be written as an instance of LIR.
+
+% \paragraph{Sum Product Belief Propogation.}
+% The state for standard sum-product belief
+Sum-product belief propogation \cite{kschischang2001factor}
+   aims to approximate marginals of $\Pr_{\Phi}$
+   with only local computations: messages sent between factors and
+       the variables they have in scope.
+% passing messages between adjacent variables and factors.
+% so the state of the algorithm consists of a pair of messages
+Its state consists ``messages''
+$m_{X \sto a}$ and $m_{a \sto X}$
+% $\{ m_{X \sto a}, m_{a \sto X}\}$, 
+both (unnormalized) distributions over $X$,
+for each variable $X$ and factor $a \in \partial X$ adjacent to it.
+% with $a \in \partial X$
+% for each pair $(X, a \in \partial X)$.
+% $\nu_X(X)$ for each variable $X$, and a joint distribution $\nu_a(\mat X_a)$ for each
+% factor $a \in \Ar$.
+% $m_{i}
+% Concretely, the messages passed are given by:
+% Together, we can regard this collection of messages as a PDG, which we call $\Msg$.
+% Just as with the original factor graph,
+   % $\Msg$.
+% which together form a PDG that we will call $\Msg$
+% in the same way as
+% the original factor graph.
+After initialization, belief propogation repeatedly recomputes:
+% The bulk of the algorithm involves propogating messages, each of which
+% is a function of other messages, as follows:
+\begin{align}
+   m_{X \!\sto a}(x)
+       % &:=
+       &:\propto
+       \prod_{{b \in \partial X\setminus a}} m_{b\sto\! X} (x)
+       % \qquad &
+       \label{eq:X->a}
+       \\
+   m_{a \sto\mskip-2mu X}(x)
+       % &:=
+       &:\propto
+       ~~\sum_{\mathclap{\mat y \in \V(\mat X_a \setminus X)}}~~ \phi_a(x, \mat y)
+       ~\prod_{\mathclap{Y \in \mat X_a \setminus X}}~
+               m_{Y \!\sto a} (Y(\mat y)),
+       \label{eq:a->X}
+\end{align}
+where $Y(\mat y)$ is the value of $Y$ in the joint setting $\mat y$.
+Observe that every calculation is a (marginal of) a product of factors,
+   and thus amounts to inference
+       % on a local factor graph of the appropriate context.
+       in a ``local'' factor graph.
+
+% On the factor graph, each node aggregates
+% The process can be visualized as propogation along the edges of the factor graph.
+% The standard illustration of it is not so different from the PDG $\Msg$
+The usual schematic illustration people draw to depict messages
+   moving between variables and factors according to \cref{eq:X->a,eq:a->X}
+   is as follows:
+\begin{center}
+   \begin{tikzpicture}[xscale=2.1,yscale=1.3]
+       \node[factor] (a) at (0,0) {$a$};
+       \node[draw,circle,inner sep=4px] (X) at (1,0) {$X$};
+       \node[factor] (b1) at (2,0.5){$b_1$};
+       \node[factor] (bm) at (2,-0.5){$b_m$};
+       \node[draw,circle,inner sep=2px] (Y1) at (-1,0.5){$Y_1$};
+       \node[draw,circle,inner sep=2px] (Yn) at (-1,-0.5){$Y_n$};
+       % \node[anchor=center] at (-1,0){$\scalebox{1}[1]{\vdots}$};
+       % \node[anchor=center,draw] at (2,0){$\scalebox{1}[1]{\vdots}$};
+       \draw (a) -- (X);
+       \draw (b1) -- (X);
+       \draw (bm) -- (X);
+       \draw (Y1) -- (a);
+       \draw (Yn) -- (a);
+
+       % \draw[arr0,red,arrows={->[harpoon,swap]}]
+       %     (1.6,0.7) to[in=23,out=-80] node[left, pos=0]{$m_{b_1 \!\sto \!X}$\!\!} (X);
+       % \draw[arr0,red,arrows={->[harpoon,swap]},dashed]
+       %     (0.5,0.7) to[in=0,out=-90] node[left, pos=0]{$m_{X \!\sto a}$\!} (a);
+       % \draw[arr0,blue,arrows={->[harpoon,swap]}]
+       %     (0.5,-0.7) to[in=180,out=90] node[right, pos=0]{\!$m_{a \sto \!X}$} (X);
+       \begin{scope}[transform canvas={yshift=2px},green!70!black]
+       \draw[arr,arrows={->[harpoon,swap]}]
+           (b1) to node[above=-0.5pt,rotate=15]{$m_{b_1 \!\sto \mskip-2muX}$\!\!} (X);
+       \draw[arr,arrows={->[harpoon,swap]}]
+           (bm) to node[above=-0.5pt,rotate=-5,pos=0.3]{$m_{b_m \!\sto \mskip-2muX}$\!\!} (X);
+       \draw[arr,arrows={->[harpoon,swap]},densely dotted]
+           (X) to node[above]{$m_{X \!\sto a}$\!} (a);
+       \end{scope}
+
+       \begin{scope}[transform canvas={yshift=-2px},blue]
+       \draw[arr,arrows={->[harpoon,swap]}]
+       % \draw[blue,arrows={->[harpoon,swap]}]
+           (Y1) to node[below=-0.5pt, rotate=-5,pos=0.35]{$m_{Y_{\!1} \!\sto a}$\!\!} (a);
+       \draw[arr,arrows={->[harpoon,swap]}]
+           (Yn) to node[below, rotate=17]{$m_{Y_{\!n} \!\sto a}$\!\!} (a);
+       \draw[arr,arrows={->[harpoon,swap]},densely dotted]
+           (a) to node[below]{\!$m_{a \sto \mskip-2muX}$} (X);
+       \end{scope}
+       % \draw (current bounding box.north west) rectangle (current bounding box.south east);
+   \end{tikzpicture}~\raisebox{1ex},
+\end{center}%
+
+While this standard diagram is only a schematic,
+   simply writing down the messages as unconditional probability
+   distributions, we get a PDG $\Msg$ that can be made to look very similar.
+Formally, a variable $X^{a}$ for every pair
+   % $(a \in \Ar, X \in \mat X_a)$,
+   $(X,a)$ with $X \in \mat X_a$
+along with edges asserting that $X^{a} = X$,
+we obtain the equivalent PDG 
+
+% (see \cref{sec:bp-details}) is not so different from the PDG
+% \begin{quotation}\it
+%     the message sent from a vertex $v$ on an edge $e$ is the product of the local function at $v$, with all messages recieved at $v$ (other than from $e$),
+%     summarized for $e$'s variable node. \cite{kschischang2001sumproduct}
+% \end{quotation}
+% \vskip
+% The PDG $\Msg$ is not so different from this schematic:
+% \begin{center}
+\[
+   %  \Msg+
+   % {\color{blue!50!black}\dg M_\Phi}
+   % = 
+   % \sum_{a \in \Ar} \sum_{X \in \mat X_a} \quad
+   % $\begin{matrix}\Msg\\+
+   %     {\color{blue!50!black}\dg M_\Phi}
+   % \end{matrix}\!\cong\,$
+   \begin{tikzpicture}[xscale=2,center base]
+       % \node[factor] (a) at (0,0) {$a$};
+   \begin{scope}[os1/.style={outer sep=1pt},dpad0/.append style={fill=gray!50!black,text=white,font=\mathversion{bold}}]
+       % \node[] (a) at (0,0) {$a$};
+       % \node[dpad0,os1] (aX) at (0.22,0){\scalebox{0.7}{$X^{(a)}$}};
+       \node[dpad0,os1] (aX) at (0.22,0){\scalebox{0.7}{$X^{a}$}};
+       \node[dpadded,os1] (X) at (1,0) {$X$};
+       % \node[factor] (b1) at (2,0.5){$b_1$};
+       % \node[factor] (bm) at (2,-0.5){$b_m$};
+       \node[dpad0,os1] (b1X) at (1.8,0.5){\scalebox{0.7}{$X^{b_1}$}};
+       \node[dpad0,os1] (bmX) at (1.8,-0.5){\scalebox{0.7}{$X^{b_m}$}};
+       % \node[draw,circle,inner sep=2px] (Y1) at (-1,0.5){$Y_1$};
+       % \node[draw,circle,inner sep=2px] (Yn) at (-1,-0.5){$Y_n$};
+       \node[dpadded,os1] (Y1) at (-1.1,0.5){$Y_1$};
+       \node[dpadded,os1] (Yn) at (-1.1,-0.5){$Y_n$};
+       % \node[dpad0,os1] (aY1) at (-0.2,0.3){\scalebox{0.7}{$Y_{1}^{(a)}$}};
+       % \node[dpad0,os1] (aYn) at (-0.2,-0.3){\scalebox{0.7}{$Y_{n}^{(a)}$}};
+       \node[dpad0,os1] (aY1) at (-0.2,0.3){\scalebox{0.7}{$Y_{1}^{a}$}};
+       \node[dpad0,os1] (aYn) at (-0.2,-0.3){\scalebox{0.7}{$Y_{n}^{a}$}};
+   \end{scope}
+       % \node[anchor=center] at (-1,0){$\scalebox{1}[1]{\vdots}$};
+       % \node[anchor=center,draw] at (2,0){$\scalebox{1}[1]{\vdots}$};
+       % \draw (a) -- (X);
+       % \draw[double equal sign distance,shorten <=0,shorten >=0] (aX.center) to (X.center);
+       % \draw[double equal sign distance,shorten <=0,shorten >=0] (aX) to (X);
+   \begin{scope}[every path/.append style={gray!50,double equal sign distance}]
+       \draw (aX) to (X);
+       \draw (aY1) to (Y1);
+       \draw (aYn) to (Yn);
+       \draw (b1X) to (X);
+       \draw (bmX) to (X);
+   \end{scope}
+       % \draw (b1) -- (X);
+       % \draw (bm) -- (X);
+       % \draw (Y1) -- (a);
+       % \draw (Yn) -- (a);
+
+       % red arrows X->a
+   \begin{scope}[green!70!black]
+       \draw[arr0,
+           % arrows={->[harpoon,swap]}
+           ]
+           (1.5,0.8) to[in=20,out=-80] node[left, pos=0.1]{$m_{b_1 \!\sto \mskip-2muX}$\!} ([yshift=1px]X.24);
+       \draw[arr0,
+           % arrows={->[harpoon,swap]}
+           ]
+           (1.6,0.1) to[in=-23,out=-95] node[right, pos=0.25]{$m_{b_m \!\sto \mskip-2muX}$\!} ([yshift=1px]X.-15);
+       \draw[arr0,
+           % arrows={->[harpoon,swap]},
+               dashed]
+           (0.6,0.7) to[in=0,out=-90] node[left, pos=0.1]{$m_{X \!\sto a}$\!} ([yshift=2px]aX.east);
+   \end{scope}
+       % blue arrows a -> X
+   \begin{scope}[blue]
+       \draw[arr0,
+           % arrows={->[harpoon,swap]}
+           ]
+           (-0.85,-0.1) to[in=160,out=110] node[right, pos=0.1]{$m_{Y_1 \!\sto a}$\!} ([yshift=-2px]aY1.175);
+       \draw[arr0,
+           % arrows={->[harpoon,swap]}
+           ]
+           (-0.8,-0.9) to[in=-157,out=100] node[right, pos=0.1]{$m_{Y_n \!\sto a}$\!} ([yshift=-1px]aYn.-166);
+
+       \draw[arr0,
+           % arrows={->[harpoon,swap]},
+           dashed]
+           (0.6,-0.7) to[in=180,out=90] node[right, pos=0.1]{\!$m_{a \sto \mskip-2muX}$} ([yshift=-2px]X.west);
+   \end{scope}
+   \begin{scope}[blue!50!black]
+       \coordinate (amerge) at (-70:0.6);
+       \draw[arr0,shorten <=0] (amerge) to[out=130,in=-90] (aX);
+       \draw[arr0,shorten <=0] (amerge) to[out=130,in=-45] (aY1);
+       \draw[arr0,shorten <=0] (amerge) to[out=130,in=-10] (aYn);
+       \draw[arr0,-,shorten >=0] (0.3,-0.9) to[in=-50,out=90]
+           node[left]{$\phi_a$} (amerge);
+   \end{scope}
+\end{tikzpicture}
+\raisebox{-1em}{
+\!\!
+$\subseteq\begin{matrix}\Msg\\+
+   {\color{blue!50!black}\dg M_\Phi}
+   \text{.\!}
+\end{matrix}$}
+% \end{center}
+\]
+%
+% Computing
+% Calculating
+% $m_{X \sto a}$
+% the message from $X$ to $a$
+% Our observation here is that the message computations are
+Indeed, it can be shown that (\ref{eq:X->a},\ref{eq:a->X}) minimize inconsistency of
+   the dotted components in their appropriate contexts
+   (shown in green and blue above, and formalized
+       in \cref{sec:bp-details}).
+   % shown above in orange and blue, respectively.
+% Once the details are in place, we find that
+
+Finally, variable marginals $\{b_X\}_{X \in \X}$,
+which we regard as another PDG, $\dg B$, are computed from the messages according to
+$
+   b_X(x) \propto \prod_{a \in \partial X} m_{a \sto X}(x)
+$.
+
+% Thus, for any schedule of messages
+\begin{linked}{prop}{bp}
+   If {\sc Refocus} selects a focus non-deterministically from
+   $\{ a\sto\mskip-2mu X, X\! \sto a, X\}_{X \in \X, a \in \partial X}$
+   (see illustration above; details in \cref{sec:bp-details}), then
+   % with attention and control sets as above and
+   % $\gamma=1$, then
+   % \[ \Big\{
+   %     \begin{pmatrix}
+   %         % \chi = \infty \mathbbm 1[m_{X \sto a}]\\
+   %         % \phi = \infty\mathbbm1 [\{ m_{b \sto X} \}_{b \in \partial X \setminus a} \cup \{m_{X \sto a}\}]
+   %         C =  \{ m_{X \sto a} \}\\
+   %         A = \{ m_{b \sto X} \}_{b \in \partial X \setminus a} \cup \{m_{X \sto a}\}
+   %     \end{pmatrix}
+   %     ~\Big|~ a \in \Ar, X \in \mat X_a \Big\},
+   % \]
+   the possible runs of
+   {\sc LIR}$(
+       \dg M_\Phi, \Msg
+       + \dg B
+        )$
+   are precisely those of BP for different message schedules.
+   % Further adopting a view with full control in $\beta$
+\end{linked}
+
+The same construction works for general cluster graphs,
+   and we suspect the same is true of the many other message passing algorithms
+   that are generated from the $\alpha$-divergences \cite{minka2005divergence},
+   because of the close relationship those divergences have with simple PDGs
+   \cite[\S5]{one-true-loss}.
+% generalized belief propogation
+   % \cite{generalized-bp} as well.
+
+% \paragraph{Message Passing from Divergences}
+% \citet{}
+% \section{Adversarial Training as LIR}
+
+% we also believe
+
+%
+% Here, various control comes in handy.
+% \section{Diffusion as LIR}
+% The diffusion objective turns out to be just the inconsistency of the appropriate PDG,
+% i.e.,
+% \[
+%     .
+% \]
+% % but it has
+% What makes this tractable, however, is that
+
+
+
 \subsection{Transformer Layers}
 
 
@@ -206,21 +1715,27 @@ is that of (scaled dot-product) (masked) \emph{self-attention}.
 This notion of attention can be viewed as an instance of our framework.
 
 Suppose that we are looking at a sequence of tokens $n$, whose current representations at some layer of the model are the vectors $x_1, \ldots, x_n \in \mathbb R^d$. 
-Let $x'_1, \ldots x'_n$ denote the transformed representations of these tokens. 
+The transformation is paramterized by three matricies $W_K, W_Q, W_V \in \mathbb R^{d \times d}$, 
+that generate key $k_i = W_K x_i$, query $q_i = W_Q x_i$, and value $v_i = W_V x_i$ representation vectors of each $x_i$.
+The result of the transformation are the processed vectors  $x'_1, \ldots x'_n$
+%  denote the transformed representations of these tokens. 
+where $x_j' = \sum_{i=1}^n \alpha_{i|j} v_i$, and $\alpha_{i|j} = \mathrm{softmax}_i( \langle k_i, q_j \rangle)$.
+
 
 Consider a PDG with variables $\mathcal X = \{ X_i \}_{i=1}^n \cup \{ X'_i\}_{i=1}^n$. 
-We now construct a bipartite graph, with $n^2 + 2n$ arcs; for each $(i,j) \in [n]^2$, 
-we have an arc 
+We start with a bipartite graph: for each $(i,j) \in [n]^2$, 
+we add an arc 
 % $a_{ij} \in \Ar$ 
-with cpd $\p_{ij} = \mathcal N(X'_j \mid V x_i, \sigma_{ij}^2)$, and we
-   also have arcs specifying the values of
-If the cpd has attention $\varphi(ij) = \exp \langle q_j, k_i\rangle$.
+with isotropic Gaussian cpd $\p_{ij} = \mathcal N(X'_j \mid v_i, I)$; finally, 
+   add two additional arcs specifying the joint values of $x$ and $x'$.
+If the cpd has attention $\varphi(ij) = \exp \langle k_i, q_j\rangle$.
 
 
 
 \begin{center}
+   $\dg M(K,Q,V,x,x') := $
    \def\vdotsmall{\rotatebox{90}{$\cdot{\cdot}\cdot$}}
-   \begin{tikzpicture}
+   \begin{tikzpicture}[center base]
       \node[dpad1] (X1) at (0, 3)  {$X_1$};
       \node             at (0, 2.4) {\vdotsmall};
       \node[dpad1,draw=black] (Xi) at (0, 1.8)  {$X_i$};
@@ -247,8 +1762,8 @@ If the cpd has attention $\varphi(ij) = \exp \langle q_j, k_i\rangle$.
       \draw[arr2] (Xi) to node[inner sep=2pt,fill=white]{$\p_{ij}$} (Xjp); 
       
       % draw x and x'
-      \node at (-0.6,3.4) {$x$};
-      \node at (2.6,3.4) {$x'$};
+      \node at (-1,3.4) {$x$};
+      \node at (3,3.4) {$x'$};
       \begin{scope}[arr2, ->>, shorten <=0pt]
          \draw[] (-0.8,3.5) -- (-0.8, 0) -- (Xn);
          \draw[] (-0.8,3) -- (X1);
@@ -263,20 +1778,430 @@ If the cpd has attention $\varphi(ij) = \exp \langle q_j, k_i\rangle$.
 
 
 \begin{prop}
-   LIR applied to the PDG above, where $\phi_{ij} \propto \exp ( x_j KQ^{\sf T} x_i / \sqrt{d})$, when controlling $x'$, leads to 
+   LIR($\dg M$) in which attention is set to $\varphi_{ij} = \exp \langle k_i, q_j \rangle$, when controlling $x'$, leads to inference in the transformer layer, i.e., 
    % $x_j' = \sum_i \alpha_{i|j} V x_i$ where $\alpha_{i|j} = \mathrm{Softmax}(x_j KQ^{\sf T} x_i / \sqrt{d})$.
-   $x_j' = \sum_i \Big( \exp(x_j KQ^{\sf T} x_i) / \sum_{i'} \exp(x_j KQ^{\sf T} x_{i'}) \Big)V x_i$.
+   $x_j' = \sum_i
+   %  \Big( \exp(x_j KQ^{\sf T} x_i) / \sum_{i'} \exp(x_j KQ^{\sf T} x_{i'}) \Big)
+      \alpha_{i|j}
+     v_i$.
 \end{prop}
 
-Notably, this model forces softmax normalization to be row-wise.
+Notably, this model forces softmax normalization to be row-wise. 
+Controlling the parameters $K,Q,V$ trains the layer, in a sense, but we still do not know whether or not this is equivalent to the standard way of training. 
 
 
 \subsection{Generative Flow Networks}
 
+\todo{this is the last subsection that needs a major rework; I've removed it for now.}
+
+
+\subsection{Decision Making}
+In this final illustration of the 
+expressive power of LIR, we return to psychological models of agents,
+as we show how some standard decision rules can be viewed as inconsistency minimization. 
+% 
+% \paragraph{Expected Utility Maximization as LIR.}
+PDG inconsistencies can represent expected costs \cite[\S 4, \S6]{oli-dissertation},
+% albeit with some strange 
+% (albeit in a brittle way, and only by articulating some questionable probabilistic beliefs),
+and thus can jointly represent an agent's probabilistic beliefs and utilities.
+% You should care about it because we've already established this construction (sections 4.2.2 and 6.8) as a way of representing something like a utility or a cost.  Yes, it may seem strange, but if you buy into the perspective of the dissertation, this is because agents with preferences are already strange.  Thus, a natural question becomes: what does inconsistency resolution mean in this context? Perhaps surprisingly, it means expected utility maximization, at least if confident in one's beliefs. 
+% For the moment, let us entertain the possibility that these strange probabilistic beliefs are in fact an appropriate way to encode preferences.
+%
+% (Perhaps this model is appropriate, but looks unnatural only because preferences themselves are unnatural).
+% (Perhaps it looks strange because preferences themselves are strange.)
+% A natural 
+What does it mean to make decisions to as to minimize inconsistency in this context? 
+% In this section, we show that the standard picture of rational decision making---that is, expected utility maximization---can be viewed as the pursuit of consistency in this probabilistic model. 
+
+Let's formalize the tranditional setup of decision theory with a PDG. 
+Suppose we are trying to choose an action (a setting of the variable $A$),
+% To do so reasonably, we need to model some context. 
+$S$ is he a variable representing the state of the world (which we are uncertain about),
+and $O$ is a variable representing the final outcome
+%
+To complete the standard picture, let's further assume that 
+we have 
+\begin{enumerate}[nosep]
+\item 
+   some understanding of how our action $A$ and the state $S$ determine the outcome $O$, say in the form of a cpd $\tau(O \mid S,A)$, 
+\item 
+a belief $p(S)$ about the current state of the world,
+and 
+\item  a utility function $u : \V O \to \mathbb R$ on possible outcomes. 
+\end{enumerate}
+It is easy to encode this information in a PDG:
+
+\begin{center}
+   \begin{tikzpicture}[scale=0.8]
+       \node[dpadded] (S) at (-0.4,0) {$S$};
+       \draw[arr2, <-] (S) -- node[above]{$p$} ++(-1.5, 0); 
+
+       \node[dpadded] (O) at (2,0) {$O$};
+       \node[dpadded] (U) at (4,0) {$U$};
+       \draw[arr2, ->>] (O) -- node[above, pos=0.35]{$u$}  (U);
+       \node[dpadded] (A) at (0.5,1.3) {$A$};
+           \mergearr[arr1,->] SAO
+       \node[below=1pt of center-SAO]{$\tau$};
+       % \node[dpad1] (T) at (5.5,0) {$\Tru$};
+   \end{tikzpicture}~.
+\end{center}
+
+% where $\V U = \mathbb R$. 
+% All that's missing is a connection 
+% However, this is just a description of what
+What's missing is the idea 
+that a higher numerical utility is ``better'' than a lower one. 
+For this, we can add a ``soft constraint'' \citep[see][\S4.2.2]{oli-dissertation} that is violated less at higher utilities than lower ones.
+At a technical level, recall that this means 
+(1) including the variable $\Tru$ that can technically take on values $\V \Tru = \{ \truf, \trut\}$, yet happens to always on the value $\trut$,
+and  
+(2) adding a cpd $b(\Tru \mid U)$ encoding a constraint violation that is more serious the lower the value of $U$. 
+Let 
+$\dg M_{(p, \tau, u, b)}$, or simply $\dg M$, 
+represent the PDG above augmented with such a soft constraint $b$. 
+
+Intuitively, imagine that there is a part of you that you cannot control, 
+   which we will call ``Faith''.
+Faith
+   engages in wishful thinking: 
+   she disbelieves outcomes that are undesirable,
+   creating epistemic conflict if she sees outcomes of low utility. 
+(Technically, Faith refers to the sub-PDG consisting of $u$, $b$, and $\Tru{=}\trut$.)
+If you have no control over Faith, but still have confidence and pay attention to her,
+then it turns out that selecting actions to minimize your combined inconsistency
+is a decision rule that interpolates between
+\begin{enumerate}[nosep,label={(\alph*)}]
+   \item 
+   maximizing expected utility (when $\beta_p \gg \beta_b$), and
+   \item 
+   maximizing maximum utility (when $\beta_p \ll \beta_b$),
+\end{enumerate}
+where  $\beta_p$ is your confidence in your prior probabilistic belief $p(S)$, and $\beta_b$ is the confidence of the soft constraint $b$ (i.e., your ``degree of faith'').
+
+\begin{linked}{prop}{eumaxmax}
+   % So long as $b(\Tru{=}\trut \mid U{=}u)$ is strictly increasing in $u$, 
+   Suppose $b(\Tru{=}\trut \mid U{=}u) = k \cdot \exp( u )$ for some constant $k$. 
+   \begin{enumerate}[nosep]
+       \item 
+   If $\beta_p = \infty$ and $\beta_b < \infty$, then 
+   the action(s) $a \in \V\! A$ that minimize the inconsistency
+   are those that maximize expected utility.
+   Formally,
+   for all $\gamma \ge 0$, 
+   \[
+       \argmin_{a \in \V\!A} \aar[\big]{\dg M
+           % _{(p,\tau,u,b)}
+            + A{=}a}_\gamma 
+       = \argmax_{a \in \V\! A} 
+           \Ex_{\substack{s\sim p \\ o \sim \tau|s,a}} \big[ u(o) \big].
+   \]
+   \item 
+   If $\beta_p < \infty$ and $\beta_b = \infty$, then 
+   the action(s) $ a \in \V\! A$ that minimize overall inconsistency are
+   those that can lead to the best possible outcome, i.e., 
+   \[
+       \argmin_{a \in \V\!A} \aar[\big]{\dg M
+           % _{(p,\tau,u,b)}
+            + A{=}a}_\gamma 
+       = \argmax_{a \in \V\! A} \;
+           \max_{s \in \V S} \;
+           \Ex_{o \sim \tau|s,a} [ u(o) ].
+   \]
+   \end{enumerate}
+\end{linked}
+
+% We suspect that it may also be possible to implement other decision rules such as minimax or maximin, but like GAN training, these objectives that look like ``two-player games'' require two different focuses of LIR. 
+We suspect that it may also be possible to implement other decision rules such as minimax or maximin.
+Like the GAN objective however, these decision rules look like two-player games, and so will likely require two different focuses of LIR, rather than just one. 
+% We leave a careful exploration of to future work.
+We leave a careful exploration of this avenue to future work.
+
+We conclude our discussion of decision theory with a high-level observation. 
+One's preferences, beliefs, and actions can be jointly modeled with a PDG. 
+% Suppose that the 
+When that PDG is inconsistent (i.e., there is a conflict between your preferences, beliefs, and actions),
+% When there is conflict between your preferences, beliefs, and actions
+% (in the sense that the PDG that represents all three is inconsistent),
+there are, in principle, three possible resolutions.
+% You can change your action to 
+You can 
+resolve the inconsistency by changing your action, 
+   which amounts to maximizing expected utility (\cref{prop:eumaxmax}.1);
+   this is thought of as the {rational} approach.
+   % maximize your expected utility, which is thought of as the rational thing to do.
+Alternatively, 
+   you can change your preferences so as to become content with your current situation, 
+% You can also change your preferences to become happy with how things currently are, 
+   which is perhaps a more zen perspective. 
+Observe that these two resolutions to the internal conflict are two halves of the famous Serenity Prayer \citep{serenity-prayer}:
+\begin{quotation}\it
+   \noindent
+   Oh, God,
+   give us the courage to change what must be altered, serenity to accept what can not be helped, and insight to know the one from the other.
+\end{quotation}
+That ``insight'' amounts to the choice of the control mask $\chi$. 
+%
+There is, of course, a third way to resolve the inconsistency: change beliefs $p(S)$ about the state of the world (i.e., wishful thinking.) 
+However, such a strategy may lead to more inconsistency in the future, making it undesirable and ineffective.  
+% This is one more reason that it can be beneficial to carefully select only small local of the picture to control while resolving inconsistencies.
+This example clearly shows that
+   there can be good reasons for 
+   restricting control $\chi$ 
+   beyond computational savings or the limits of one's power.
+   % can be  a computational shortcut.
+   % while resolving inconsistency.
+
+
+
+
 \section{Synthetic Experiments}
+\todo{Let's start writing about experiments!}
 \section{Conclusion}
 
 
 \bibliography{lir-refs}
+
+
+
+
+\clearpage
+\appendix
+\section{Details on Belief Propogation} \label{sec:bp-details}
+
+We now define the views.
+% To a first approximation
+Modulo a small subtlety,
+the following is essentially true:
+% In particular,
+\eqref{eq:X->a}
+selects
+$C_{X \sto a} := \{ m_{X \sto a} \}$ so as to
+minimize 1-inconsistency in  context
+$A_{X \sto a} := \{ m_{b \sto X} \}_{b \in \partial X \setminus a} \cup \{m_{X \sto a}\}$,
+while
+% $m_{a \sto X}$
+% the mesage from $a$ to $X$
+\eqref{eq:a->X}
+% is the one that minimizes the 1-inconsistency of
+selects
+$C_{a \sto X} := \{ m_{a \sto X} \}$
+so as to minimize the 1-inconsistency in
+context
+$A_{a \sto X} := \{ \phi_a, m_{a \sto X} \} \cup \{ m_{Y \sto a} \}_{Y \in \mat X_a \setminus X}$.
+
+The only wrinkle is that we do not attend to
+   the \emph{structural} aspect of the edges $e$ that we're updating;
+       i.e., we must select $\varphi$ to effectively set $\alpha_e = 0$.
+Intuitively: although all of the input messages summarize causal information,
+   we're trying to capture that information with a distribution.
+   Thus, it's not appropriate to attend to the causal structure of the edges that we're modifying. 
+Thus, for each $f \in\bigcup_{a\in \Ar,X \in \mat X_a}\{a \sto X, X \sto a, X\}$, define
+a focus $(\varphi_f, \chi_f) \in \mat F$ according to
+\[
+   \varphi_f(a) :=  \begin{cases}
+       \binom 11 & \text{ if } a \in A_{f} \setminus C_{f} \\
+       \binom 10 & \text{ if } a \in C_{f} \\
+       \binom 00 & \text{otherwise}
+   \end{cases},
+   \qquad\qquad
+   \chi_f(a) := \begin{cases}
+   \infty & \text{ if } a \in C_{v} \\
+   0 & \text{ otherwise}.
+\end{cases}
+\]
+where $\binom{\phi_1}{\phi_2}$ scales $\beta_a$ by $\phi_1$ and $\alpha_a$ by $\phi_2$.
+With these definitions, \cref{prop:bp} follows easily.
+
+
+\onecolumn
+\section{Proofs}
+
+First, some extra details for \cref{prop:logccave}.
+By parameteriations $\mathbb P$ log-concave, we mean that, for every $a \in \Ar$, and $(s,t) \in \V(\Src a,\Tgt a)$, the function
+$$
+   \theta \mapsto -\log \p_a^{\,\theta}(\Tgt a =t\mid\Src a = a) \quad: \Theta_a \to [0,\infty]
+$$
+is convex.
+This is true for many families of distributions of interest.
+For example, if $\Src a, \Tgt a$ is discrete, and the cpd is parameterized
+by stochastic matrices $\mat P = [p_{s,t}] \in [0,1]^{\V(\Src a, \Tgt a)}$, then
+\[
+   - \log \p_a^{\mat P}(\Tgt a =t | \Src a=s) = - \log (p_{s,t})
+\]
+which is clearly convex in $\mat P$.
+
+To take another example: if $\p_a$ is linear Gaussian, i.e.,
+$\p_a(T|S) = \mathcal N(T | \mat A s + b,  \sigma^2)$, parameterized by
+$(\mat A, b, 1/\sigma^2)$, then
+\begin{align*}
+   - \log \p_a^{(\mat A, b, \sigma^2)}(t|s)
+   &= -\frac12 \log \frac{2\pi}{\sigma^2}  + \frac12 \left(\frac{t- \mat A s + b}{\sigma}\right)^2
+\end{align*}
+which is convex in $(\mat A, b, \frac1{\sigma^2})$.  Now, for the proof.
+
+
+% \textbf{\cref{thm:cvx}}. \textit{If $\mathbb P$ is log-concave, then
+% the map $\theta \mapsto \aar*{\varphi \odot( \Ctx + \dg M(\theta))}_\gamma$ is convex.}
+% \begin{proof}
+\recall{prop:logccave}
+\begin{lproof} 
+       \label{proof:logccave}
+   By definition,
+   \begin{align*}
+       \aar*{\varphi \odot( \Ctx + \dg M(\theta))}_\gamma
+       &= \inf_\mu 
+       \Big\{ 
+            \SDef_{\Ctx}
+           + \OInc_{\Ctx}(\mu)
+           + \SDef_{\dg M(\theta)}(\mu)
+           + \OInc_{\dg M(\theta)}(\mu)  
+       \Big\}.
+   \end{align*}
+   Only the final term actually depends on $\theta$, though. Let $F(\mu)$ capture
+       the first three terms. For all of our examples, and indeed, if $\gamma$ is chosen small enough, it will be convex in $\mu$ \cite[from the proof of Proposition 3.2]{pdg-aaai}.
+   Then we have
+   \begin{align*}
+       \aar*{\varphi \odot( \Ctx + \dg M(\theta))}_\gamma
+           &= \inf_\mu  \left( F(\mu) + \Ex_\mu \left[ \sum_{\ed a ST}\beta_a \log \frac{\mu(T|S)}{\p_a(T|S)} \right] \right) \\
+           &= \inf_\mu  \left( F(\mu) + \Ex_\mu \left[ \sum_{\ed a ST} \beta_a\log \frac{\mu(T|S)}{\lambda(T|S)} \right] +
+           \Ex_\mu \left[\sum_{\ed a ST} \beta_a \log \frac{\lambda(T|S)}{\p_a(T|S)} \right] \right)
+   \end{align*}
+   The second term is then entropy (relative to the base distribution), which is
+       convex in $\mu$. The first term, $F(\mu)$, is convex in $\mu$ as well, and neither depend on $\theta$. The final term is linear in $\mu$.
+       Since $\mathbb P$ is log-convex in $\theta$, the $\log\frac{\lambda(t|s)}{\p_a(t|s)}$ convex in $\theta$, and so that third term is a conic combination of expectations that are all convex, and hence itself convex in $\theta$.
+       Thus, the sum of all three terms in the infemum is jointly convex in $\theta$ and in $\mu$. Taking an infemum over $\mu$ pointwise, the result is still convex in $\theta$.
+   % Since $\varphi \ge 0$ and $\bbeta  > 0$ this is effectively just the inconsistency of a PDG.
+\end{lproof}
+
+
+\recall{prop:LIR-EM}
+
+% \textbf{\cref{prop:bp}.}\textit{
+% If \textsc{Refocus} selects a view non-deterministically from
+% $\{ a\sto\mskip-2mu X, X\! \sto a, X\}_{X \in \X, a \in \partial X}$
+% with $\varphi, \chi$ as above, and $\gamma=1$, then
+% % with attention and control sets as above and
+% % $\gamma=1$, then
+% % \[ \Big\{
+% %     \begin{pmatrix}
+% %         % \chi = \infty \mathbbm 1[m_{X \sto a}]\\
+% %         % \phi = \infty\mathbbm1 [\{ m_{b \sto X} \}_{b \in \partial X \setminus a} \cup \{m_{X \sto a}\}]
+% %         C =  \{ m_{X \sto a} \}\\
+% %         A = \{ m_{b \sto X} \}_{b \in \partial X \setminus a} \cup \{m_{X \sto a}\}
+% %     \end{pmatrix}
+% %     ~\Big|~ a \in \Ar, X \in \mat X_a \Big\},
+% % \]
+% the possible runs of
+% {\sc LIR}$(
+%     \dg M_\Phi, \Msg
+%     + \dg B
+%      )$
+% are precisely those of BP for different message schedules.}
+\recall{prop:bp}
+\begin{lproof} \label{proof:bp}
+When $\gamma=1$, and $\alpha, \beta = 1$ for all of the input factors, then the optimal
+distribution $\mu^*$ that realizes the infemum is just the product of factors. It follows that any distribution that has those marginals will minimize the observational inconsistency.
+
+The different orders that the \eqref{eq:X->a}, and \eqref{eq:a->X} can be ordered
+for different adjacent pairs $(a, X)$ correspond to both the message passing schedules, and to the possible view selections of LIR.
+\end{lproof}
+
+
+\recall{prop:eumaxmax}
+\begin{lproof}\label{proof:eumaxmax}
+   Since the choice $a$ is deterministic, the value of $A$ is determined; likewise the value of $\Tru$ is also fixed. 
+   Similarly, as $u$ is a deterministic function, the value of $U$ is determined according to $u$.
+   Thus we need only consider distributions $\mu(S, O)$ in our minimization; the other variables can be found as a function of these.
+   However, we also know that $\mu(O\mid S) = \tau(O|S,A{=}a)$ since it is given with high confidence. 
+   Therefore it suffices to restrict our search to distributions over the variable $S$.
+   
+   To simplify notation, let 
+   $ EU(s,a) := \Ex_{o \sim \tau (O|s,a)} [ u(o) ] + \log k$
+   be the expected utility of an action, shifted by the constant $\log k$.
+   Note that
+   \[
+       \log \frac{1}{b(\Tru{=}\trut\mid U{=}u(o))}
+       = - \log (k \cdot \exp( u(o) ))
+       = - u(o) - \log k,
+   \]
+   which in expectation over $\tau(O|s,a)$, is $ - EU(s,a)$. 
+   % which happens to be equal to 
+   % $\log \frac{1}{b(\Tru{=}\trut\mid U{=}u(o))} =  \log \exp u(o) $
+   % We then calculate that
+   With this in mind, we calculate:
+   \begin{align*}
+       \aar[\big]{\dg M_{p,\tau,u,b}+A{=}a}_{\gamma}
+       &= \inf_{\mu(S)} 
+           \beta_p \Ex_{s \sim \mu} \Big[ \log \frac {\mu(s)}{p(s)} 
+           + \frac{\beta_b}{\beta_p} \Ex_{o\sim \tau|a,s}\Big[\log \frac1{b(\Tru{=}\trut\mid U{=}u(o))}\Big]
+           \\
+       &= \inf_{\mu(S)} 
+           \beta_p \Ex_{s \sim \mu} \Big[ \log \frac {\mu(s)}{p(s)} 
+           + \log \circ \exp \Big(- \frac{\beta_b}{\beta_p} EU(s,a) \Big)
+           \\
+       &= \inf_{\mu(S)} 
+           \beta_p \Ex_{s \sim \mu} \Big[ \log \frac {\mu(s)}{1}\cdot\frac{\exp(-\frac{\beta_b}{\beta_p} EU(s,a))}{p(s)} \cdot \frac ZZ \Big]
+           \\
+       &= \inf_{\mu(S)} 
+           \beta_p \Ex_{s \sim \mu} \Big[ \log \frac {\mu(s)}{1}\cdot\frac{Z}{p(s)\cdot \exp(\frac{\beta_b}{\beta_p} EU(s,a))} \cdot \frac 1Z \Big]
+               \numberthis\label{eq:save-eu-calc}
+   \end{align*}
+   At this point, we can use the same trick used repeatedly in the proving results of \citet{one-true-loss}: take $Z$ to be the normalization constant needed to regard the middle fraction as the inverse of a probability distribution $\nu$. 
+   Once we do so, we are left with an infimum over a KL divergence $\kldiv{\mu}{\nu}$ plus the expectation of a constant:
+   \begin{align*}
+       \aar[\big]{\dg M_{p,\tau,u,b}+A{=}a}_{\gamma}
+           &= \beta_p \log \frac1 Z
+           = - \log \sum_{s} p(s) \exp\Big( + \frac{\beta_b}{\beta_p} EU(s,a)\Big).
+   \end{align*}
+   We now look at the two extreme cases. 
+   
+   When $\beta_p \to \infty$, then
+       the ratio $\frac{\beta_b}{\beta_p}$ becomes small, 
+       and we can use the fact that $\exp( \epsilon) \approx 1+\epsilon$
+       for small $\epsilon$
+   to find that the inconsistency of interest is
+   approximately 
+   \begin{align*}
+       \approx 
+       - \beta_p \log \sum_{s} p(s) \Big[ 1 + \frac{\beta_b}{\beta_p} EU(s,a) \Big]
+       = - \beta_p \log( 1 +  \frac{\beta_b}{\beta_p} EU(s,a) )
+       \approx
+       - \beta_b EU(s,a)
+   \end{align*}
+   Alternatively, more directly, when $\beta_p = \infty$, the optimal distribution must be $\mu = p$, and so the inconsistency is immediately $ - \Ex_{s \sim p} [ \beta_b EU(s,a)]$. 
+   Either way, minimizing this quantity amounts to maximizing espected utility, as the two differ by a negative affine transformation.
+   
+   At the other extreme, when $\beta_b \to \infty$, 
+   we can write our expression in terms of 
+   $\mathrm{LSE} \{ x_1, \ldots, x_n \} := \log \sum_{i=1}^n \exp( x_i)$ (LogSumExp)
+   which is a smooth approximation to a $\max$.  (In a moment, we will negate its arguments and the final output, using it as an approximation to a $\min$, instead.)
+   Picking back up from \eqref{eq:save-eu-calc} and letting $t := \frac{\beta_b}{\beta_p}$, we find
+   \begin{align*}
+       \aar[\big]{\dg M_{p,\tau,u,b}+A{=}a}_{\gamma}
+           &= - \beta_b \cdot \frac{-1}{t} \mathop{\mathrm{LSE}}\limits_{s \in \V S} \Big[-t \cdot \Big( \frac1t \log \frac1{p(s)} -  EU(s,a)\Big) \Big]. 
+   \end{align*}
+   Using the standard fact
+   \unskip\footnote{
+       Letting $m := \min_i x_i$, observe that, for all $t > 0$, we have
+       $\exp(-tm) \le \sum_i \exp(-t x_i) \le n \exp(- tm)$.
+       Apply a logarithm and multiply by $-\frac{1}{t}$ to get the promised result.}
+   that 
+   \[
+       \min_{i \in [n]} x_i - \frac{1}{t} \log n \le 
+           \frac{-1}{t} \mathop{\mathrm{LSE}}\limits_{i \in [n]} ( - t x_i ) < \min_{i \in [n]} x_i,
+   \]
+   we find that, in our case,
+   \[
+   M - \frac{1}{t} \log |\V S|
+   ~~\le~~ \frac{1}{\beta_b} \aar[\big]{\dg M_{p,\tau,u,b}+A{=}a}_{\gamma}
+   ~~\le~~ M
+   \]
+   where $M := \min_{s \in \V S}  ( -  EU(s,a)  + \frac{1}{t} \log \frac 1{p(s)} )$.
+   In particular, when $\beta_b \to \infty$, meaning $t \to \infty$, the gap between the upper and lower bounds shrinks to zero,
+   and the resulting inconsistency becomes
+   $ - \min_{s \in \V S} ( - EU(s,a) ) = \max_{s \in \V S)} EU(s,a)$,
+   proving the result.
+\end{lproof}
 
 \end{document}
