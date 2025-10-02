@@ -34,9 +34,9 @@ def load_simple_dataset():
     return pdgs, specs
 
 
-def create_optimal_attention_strategy(alpha: float, beta: float):
+def create_optimal_attention_strategy(alpha: float, beta: float): #  
     """Create an attention strategy with optimal alpha and beta values."""
-    def attention_strategy(M: PDG, t: int):
+    def refocus(M: PDG, t: int):
         """Attention strategy with optimal alpha and beta."""
         attn_alpha = {}
         attn_beta = {}
@@ -50,7 +50,7 @@ def create_optimal_attention_strategy(alpha: float, beta: float):
         
         return attn_alpha, attn_beta, control
     
-    return attention_strategy
+    return refocus 
 
 
 def test_attention_with_best_hyperparams():

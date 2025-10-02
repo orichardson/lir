@@ -1,0 +1,50 @@
+[
+  {
+    "learning_rate": 0.001,
+    "outer_iters": 3,
+    "inner_iters": 10,
+    "optimizer": "Adam",
+    "attention_strategy": "uniform",
+    "pdg_name": "chain_pdg",
+    "pattern": "chain",
+    "initial_global": 0.09882211685180664,
+    "final_global": 0.09802068769931793,
+    "improvement_global": 0.8109815677097155,
+    "initial_local": 0.09948570281267166,
+    "final_local": 0.09868452697992325,
+    "improvement_local": 0.8053175582998102,
+    "success": true
+  },
+  {
+    "learning_rate": 0.01,
+    "outer_iters": 3,
+    "inner_iters": 10,
+    "optimizer": "Adam",
+    "attention_strategy": "uniform",
+    "pdg_name": "chain_pdg",
+    "pattern": "chain",
+    "initial_global": 0.09882211685180664,
+    "final_global": 0.09129715710878372,
+    "improvement_global": 7.614651439117952,
+    "initial_local": 0.09948570281267166,
+    "final_local": 0.09196110814809799,
+    "improvement_local": 7.563493498902285,
+    "success": true
+  },
+  {
+    "learning_rate": 0.1,
+    "outer_iters": 3,
+    "inner_iters": 10,
+    "optimizer": "Adam",
+    "attention_strategy": "uniform",
+    "pdg_name": "chain_pdg",
+    "pattern": "chain",
+    "initial_global": 0.09882211685180664,
+    "final_global": 0.08781310170888901,
+    "improvement_global": 11.140234082848801,
+    "initial_local": 0.09948570281267166,
+    "final_local": 0.08853389322757721,
+    "improvement_local": 11.008425608367418,
+    "success": true
+  }
+]
