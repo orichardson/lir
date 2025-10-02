@@ -44,13 +44,10 @@ Four different attention strategies for beta values:
 
 ### 3. Inconsistency Measures
 
-#### Global Inconsistency
-- Uses `torch_score(pdg, mu, γ=0.001)`
-- Higher gamma value focuses on global structure
-
-#### Local Inconsistency  
-- Uses `torch_score(pdg, mu, γ=0.0001)`
-- Lower gamma value focuses on local edge inconsistencies
+#### Global and Local Inconsistency
+- Both use `torch_score(pdg, mu, γ=0.0)`
+- With gamma=0, the entropy term is eliminated
+- Focuses purely on likelihood and conditional information terms
 
 ### 4. Experimental Results
 

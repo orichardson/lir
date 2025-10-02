@@ -274,16 +274,16 @@ class ExperimentalSetup:
         
         try:
             # Initialize parameters
-            mu_init = opt_joint(pdg_copy, gamma=0.1, iters=20, verbose=False)
+            mu_init = opt_joint(pdg_copy, gamma=0.0, iters=20, verbose=False)
             
             # Compute initial inconsistencies
-            initial_global = float(torch_score(pdg_copy, mu_init, 0.001))
-            initial_local = float(torch_score(pdg_copy, mu_init, 0.0001))
+            initial_global = float(torch_score(pdg_copy, mu_init, 0.0))
+            initial_local = float(torch_score(pdg_copy, mu_init, 0.0))
             
             # Run LIR training
             lir_train(
                 pdg_copy,
-                gamma=0.1,
+                gamma=0.0,
                 T=10,  # Number of training steps
                 outer_iters=5,
                 inner_iters=10,
@@ -294,9 +294,9 @@ class ExperimentalSetup:
             )
             
             # Compute final inconsistencies
-            mu_final = opt_joint(pdg_copy, gamma=0.1, iters=20, verbose=False)
-            final_global = float(torch_score(pdg_copy, mu_final, 0.001))
-            final_local = float(torch_score(pdg_copy, mu_final, 0.0001))
+            mu_final = opt_joint(pdg_copy, gamma=0.0, iters=20, verbose=False)
+            final_global = float(torch_score(pdg_copy, mu_final, 0.0))
+            final_local = float(torch_score(pdg_copy, mu_final, 0.0))
             
             # Calculate improvements
             improvement_global = (initial_global - final_global) / initial_global * 100 if initial_global > 0 else 0

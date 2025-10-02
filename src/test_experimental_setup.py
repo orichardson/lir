@@ -277,9 +277,9 @@ def test_single_experiment():
                     pdg_copy.edgedata[key]['cpd'] = learnable
         
         # Test initial optimization
-        mu_init = opt_joint(pdg_copy, gamma=0.1, iters=5, verbose=False)
-        initial_global = float(torch_score(pdg_copy, mu_init, 0.001))
-        initial_local = float(torch_score(pdg_copy, mu_init, 0.0001))
+        mu_init = opt_joint(pdg_copy, gamma=0.0, iters=5, verbose=False)
+        initial_global = float(torch_score(pdg_copy, mu_init, 0.0))
+        initial_local = float(torch_score(pdg_copy, mu_init, 0.0))
         
         print(f"✓ Initial optimization successful")
         print(f"  Initial global inconsistency: {initial_global:.4f}")
@@ -288,7 +288,7 @@ def test_single_experiment():
         # Test LIR training (short version)
         lir_train(
             pdg_copy,
-            gamma=0.1,
+            gamma=0.0,
             T=2,  # Very short training
             outer_iters=2,
             inner_iters=3,
@@ -299,9 +299,9 @@ def test_single_experiment():
         )
         
         # Test final optimization
-        mu_final = opt_joint(pdg_copy, gamma=0.1, iters=5, verbose=False)
-        final_global = float(torch_score(pdg_copy, mu_final, 0.001))
-        final_local = float(torch_score(pdg_copy, mu_final, 0.0001))
+        mu_final = opt_joint(pdg_copy, gamma=0.0, iters=5, verbose=False)
+        final_global = float(torch_score(pdg_copy, mu_final, 0.0))
+        final_local = float(torch_score(pdg_copy, mu_final, 0.0))
         
         print(f"✓ LIR training successful")
         print(f"  Final global inconsistency: {final_global:.4f}")
