@@ -72,7 +72,7 @@ def make_every_cpd_parametric(pdg, init: str = "from_cpd"):
     Replace each edge's CPD with a learnable ParamCPD.
     updates the existing (X, Y, L) key, not a new key .
     """
-    edges_snapshot = list(pdg.edges("l,X,Y,α,β,P"))  # freeze view before edits
+    edges_snapshot = list(pdg.edges("l,X,Y,α,β,P"))  # freeze view before edits (to avoid changing the list we're iterating through)
     for L, X, Y, α, β, P in edges_snapshot:
         learnable = ParamCPD(
             src_var=X,
@@ -97,7 +97,7 @@ def make_every_cpd_parametric_projections_fixed(pdg, init: str = "from_cpd"):
     Replace each edge's CPD with a learnable ParamCPD.
     updates the existing (X, Y, L) key, not a new key .
     """
-    edges_snapshot = list(pdg.edges("l,X,Y,α,β,P"))  # freeze view before edits
+    edges_snapshot = list(pdg.edges("l,X,Y,α,β,P"))  # freeze view before edits (to avoid changing the list we're iterating through)
     print(edges_snapshot)
 
     for L, X, Y, α, β, P in edges_snapshot:
@@ -173,12 +173,16 @@ def test_lir_on_random_pdg(num_vars=4, num_edges=4, gamma=1.0, seed=0, init="fro
                               seed=seed)
     pdg = make_every_cpd_parametric(pdg=pdg, init=init)
 
+    #Testing with everything uniform except π edges (initialized from CPD)
+    # Debug: print edge structure
     print("\nEdges (label -> X -> Y):")
     for L, X, Y, α, β, P in pdg.edges("l,X,Y,α,β,P"):
         print(f"  {L}: {X.name} -> {Y.name}  |X|={len(X)}  |Y|={len(Y)}  α={α:.2f} β={β:.2f}  param={hasattr(P, 'probs')}")
 
+    # find current mu*
     mu0 = opt_joint(pdg=pdg, gamma=gamma, iters=25, verbose=False)
 
+    # ---- LIR outer loop (θ-updates only; μ is re-solved each step) ----
     lir_train(
         M=pdg,
         gamma=gamma,
@@ -192,6 +196,7 @@ def test_lir_on_random_pdg(num_vars=4, num_edges=4, gamma=1.0, seed=0, init="fro
         standard_type="adam",
     )
 
+    # Evaluate after training: solve for μ* with new θ
     mu_star = opt_joint(pdg=pdg, gamma=gamma, iters=350, verbose=False)
 
     print("\nLearned CPDs:")
@@ -266,10 +271,13 @@ def test_refocus_masks(num_vars=4, num_edges=5, gamma=0.2, seed=1, init="from_cp
         print("Not enough learnable edges to meaningfully test refocus; skipping.")
         return None, pdg
 
+    # Snapshot logits before training
     before = {L: P.logits.detach().clone() for (L, P) in learns}
 
+    # Warm start μ
     mu0 = opt_joint(pdg=pdg, gamma=gamma, iters=25, verbose=False)
 
+    # Run LIR with demo_refocus providing masks each step
     lir_train(
         M=pdg,
         gamma=gamma,
@@ -284,16 +292,20 @@ def test_refocus_masks(num_vars=4, num_edges=5, gamma=0.2, seed=1, init="from_cp
         standard_type="adam",
     )
 
+    # Compare logits after training
     after = {L: P.logits.detach().clone() for (L, P) in learns}
 
+    # Identify which labels were masked
     attn_alpha, attn_beta, control = demo_refocus(M=pdg, t=0)
     frozen_label = next((L for L, _ in learns[2:3]), None)
 
+    # Check: frozen edge unchanged
     if frozen_label is not None:
         changed = (after[frozen_label] - before[frozen_label]).abs().max().item()
         print(f"Frozen edge {frozen_label}: max |Δ| = {changed:.3e} (expected ~0)")
         assert changed < 1e-8, "Control mask failed: frozen edge parameters changed."
 
+    # Check: at least one unfrozen edge changed
     any_changed = False
     for L, _ in learns:
         if L == frozen_label:
@@ -310,7 +322,7 @@ def test_refocus_masks(num_vars=4, num_edges=5, gamma=0.2, seed=1, init="from_cp
 
 
 if __name__ == "__main__":
-
+    # uniform <=> all edges initialized to ones except the projection edges which are initialized to what they were in the cpd
     _mu, _pdg = test_lir_on_random_pdg(init="random", gamma=0.0)  # "from_cpd" or "uniform" or "random"
     print(_mu)
     print(_pdg)
