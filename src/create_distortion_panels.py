@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Create individual panels as separate figures (PNG and PDF).
+Create individual panels for distortion analysis (PNG and PDF).
 """
 
 import sys
@@ -180,6 +180,8 @@ def run_strategy(pdg: PDG, pdg_name: str, strategy_name: str, strategy_func):
         mu_init = opt_joint(pdg_copy, gamma=0.0, iters=50, verbose=False)
         initial_inconsistency = float(torch_score(pdg_copy, mu_init, 0.0))
         
+        mu_init_array = mu_init.data.detach().cpu().numpy() if hasattr(mu_init.data, 'detach') else mu_init.data
+        
         lir_train(
             pdg_copy,
             gamma=0.0,
@@ -195,6 +197,10 @@ def run_strategy(pdg: PDG, pdg_name: str, strategy_name: str, strategy_func):
         mu_final = opt_joint(pdg_copy, gamma=0.0, iters=50, verbose=False)
         final_inconsistency = float(torch_score(pdg_copy, mu_final, 0.0))
         
+        mu_final_array = mu_final.data.detach().cpu().numpy() if hasattr(mu_final.data, 'detach') else mu_final.data
+        
+        distortion_tv = float(0.5 * np.sum(np.abs(mu_init_array - mu_final_array)))
+        
         resolution_pct = ((initial_inconsistency - final_inconsistency) / 
                          initial_inconsistency * 100) if initial_inconsistency > 0 else 0
         
@@ -204,6 +210,7 @@ def run_strategy(pdg: PDG, pdg_name: str, strategy_name: str, strategy_func):
             'initial': initial_inconsistency,
             'final': final_inconsistency,
             'resolution_pct': resolution_pct,
+            'distortion_tv': distortion_tv,
             'success': True
         }
     
@@ -214,147 +221,93 @@ def run_strategy(pdg: PDG, pdg_name: str, strategy_name: str, strategy_func):
             'initial': 0.0,
             'final': 0.0,
             'resolution_pct': 0.0,
+            'distortion_tv': 0.0,
             'success': False,
             'error': str(e)
         }
 
 
-def create_panel_1(df, output_dir):
-    """Panel 1: Initial vs Final Inconsistency by PDG and Focus"""
-    fig, ax = plt.subplots(figsize=(12, 6))
-    
-    pdgs = df['pdg_name'].unique()
-    strategies = df['strategy'].unique()
-    x = np.arange(len(pdgs))
-    width = 0.15
+def create_distortion_panel_1(df, output_dir):
+    """Panel: Average Total Variation Distortion by Focus"""
+    fig, ax = plt.subplots(figsize=(10, 7))
     
     colors = {'uniform': '#2E86AB', 'partial': '#A23B72', 'hub': '#F18F01'}
+    strategies = df['strategy'].unique()
+    means = [df[df['strategy'] == s]['distortion_tv'].mean() for s in strategies]
     
-    for i, strategy in enumerate(strategies):
-        strategy_data = df[df['strategy'] == strategy]
-        initial_vals = [strategy_data[strategy_data['pdg_name'] == pdg]['initial'].values[0] 
-                       if len(strategy_data[strategy_data['pdg_name'] == pdg]) > 0 else 0
-                       for pdg in pdgs]
-        final_vals = [strategy_data[strategy_data['pdg_name'] == pdg]['final'].values[0]
-                     if len(strategy_data[strategy_data['pdg_name'] == pdg]) > 0 else 0
-                     for pdg in pdgs]
-        
-        offset = (i - len(strategies)/2 + 0.5) * width
-        ax.bar(x + offset, initial_vals, width, label=f'{strategy} (initial)', 
-               color=colors.get(strategy, 'gray'), alpha=0.3, edgecolor='black', linewidth=0.5)
-        ax.bar(x + offset, final_vals, width, label=f'{strategy} (final)', 
-               color=colors.get(strategy, 'gray'), alpha=1.0, edgecolor='black', linewidth=1.5)
+    bars = ax.bar(strategies, means, color=[colors.get(s, 'gray') for s in strategies],
+                   alpha=0.8, edgecolor='black', linewidth=2.5, width=0.6)
     
-    ax.set_xlabel('PDG', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Inconsistency', fontsize=14, fontweight='bold')
-    ax.set_title('Initial vs Final Inconsistency by PDG and Focus', fontsize=16, fontweight='bold')
-    ax.set_xticks(x)
-    ax.set_xticklabels(pdgs, rotation=0, fontsize=12)
-    ax.legend(ncol=2, fontsize=10, loc='upper right')
+    ax.set_xlabel('Focus', fontsize=16, fontweight='bold')
+    ax.set_ylabel('Average Total Variation Distance', fontsize=16, fontweight='bold')
+    ax.set_title('Average Distortion by Focus', fontsize=18, fontweight='bold', pad=20)
     ax.grid(True, alpha=0.3, axis='y')
+    ax.tick_params(axis='both', labelsize=14)
+    
+    # Add value labels on bars
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2., height + 0.005,
+                f'{height:.4f}', ha='center', va='bottom', fontsize=13, fontweight='bold')
     
     plt.tight_layout()
-    plt.savefig(f'{output_dir}/panel_1_initial_vs_final.png', dpi=300, bbox_inches='tight')
-    plt.savefig(f'{output_dir}/panel_1_initial_vs_final.pdf', bbox_inches='tight')
+    plt.savefig(f'{output_dir}/distortion_panel_1_average.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_dir}/distortion_panel_1_average.pdf', bbox_inches='tight')
     plt.close()
-    print("✓ Panel 1: Initial vs Final Inconsistency")
+    print("✓ Distortion Panel 1: Average by Focus")
 
 
-def create_panel_2(df, output_dir):
-    """Panel 2: Average Resolution by Focus"""
-    fig, ax = plt.subplots(figsize=(8, 6))
+def create_distortion_panel_2(df, output_dir):
+    """Panel: Resolution vs Distortion Trade-off"""
+    fig, ax = plt.subplots(figsize=(10, 7))
     
     colors = {'uniform': '#2E86AB', 'partial': '#A23B72', 'hub': '#F18F01'}
+    strategies = df['strategy'].unique()
     
-    strategy_means = df.groupby('strategy')['resolution_pct'].mean().sort_values(ascending=False)
-    bars = ax.barh(strategy_means.index, strategy_means.values, 
-                   color=[colors.get(s, 'gray') for s in strategy_means.index],
-                   edgecolor='black', linewidth=2)
-    ax.set_xlabel('Resolution (%)', fontsize=14, fontweight='bold')
-    ax.set_title('Average Resolution by Focus', fontsize=16, fontweight='bold')
-    ax.grid(True, alpha=0.3, axis='x')
-    ax.tick_params(axis='both', labelsize=12)
+    for strategy in strategies:
+        strategy_data = df[df['strategy'] == strategy]
+        ax.scatter(strategy_data['resolution_pct'], strategy_data['distortion_tv'],
+                   label=strategy, alpha=0.8, s=250, color=colors.get(strategy, 'gray'),
+                   edgecolors='black', linewidth=2.5)
     
-    # Add value labels
-    for bar in bars:
-        width = bar.get_width()
-        ax.text(width + 1, bar.get_y() + bar.get_height()/2, 
-                f'{width:.1f}%', ha='left', va='center', fontweight='bold', fontsize=12)
+    ax.set_xlabel('Resolution (%)', fontsize=16, fontweight='bold')
+    ax.set_ylabel('Total Variation Distance', fontsize=16, fontweight='bold')
+    ax.set_title('Resolution vs Distortion Trade-off', fontsize=18, fontweight='bold', pad=20)
+    ax.legend(fontsize=14, loc='upper left')
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(axis='both', labelsize=14)
     
     plt.tight_layout()
-    plt.savefig(f'{output_dir}/panel_2_average_resolution.png', dpi=300, bbox_inches='tight')
-    plt.savefig(f'{output_dir}/panel_2_average_resolution.pdf', bbox_inches='tight')
+    plt.savefig(f'{output_dir}/distortion_panel_2_tradeoff.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_dir}/distortion_panel_2_tradeoff.pdf', bbox_inches='tight')
     plt.close()
-    print("✓ Panel 2: Average Resolution by Strategy")
+    print("✓ Distortion Panel 2: Resolution vs Distortion Trade-off")
 
 
-def create_panel_3(df, output_dir):
-    """Panel 3: Resolution Percentage Heatmap"""
+def create_distortion_panel_3(df, output_dir):
+    """Panel: Heatmap of Total Variation Distortion"""
     fig, ax = plt.subplots(figsize=(12, 6))
     
-    pivot_data = df.pivot(index='strategy', columns='pdg_name', values='resolution_pct')
-    sns.heatmap(pivot_data, annot=True, fmt='.1f', cmap='RdYlGn', 
-               cbar_kws={'label': 'Resolution (%)'}, ax=ax,
-               vmin=0, vmax=100, linewidths=3, linecolor='black',
+    pivot_tv = df.pivot(index='strategy', columns='pdg_name', values='distortion_tv')
+    sns.heatmap(pivot_tv, annot=True, fmt='.4f', cmap='YlOrRd', ax=ax,
+               cbar_kws={'label': 'Total Variation Distance'}, linewidths=3, linecolor='black',
                annot_kws={'fontsize': 14, 'fontweight': 'bold'})
-    ax.set_title('Resolution Percentage Heatmap (Focus × PDG)', 
-                 fontsize=16, fontweight='bold')
-    ax.set_xlabel('PDG', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Focus', fontsize=14, fontweight='bold')
-    ax.tick_params(axis='both', labelsize=12)
+    ax.set_title('Distortion Heatmap (Focus × PDG)', fontsize=18, fontweight='bold', pad=20)
+    ax.set_xlabel('PDG', fontsize=16, fontweight='bold')
+    ax.set_ylabel('Focus', fontsize=16, fontweight='bold')
+    ax.tick_params(labelsize=13)
     
     plt.tight_layout()
-    plt.savefig(f'{output_dir}/panel_3_heatmap.png', dpi=300, bbox_inches='tight')
-    plt.savefig(f'{output_dir}/panel_3_heatmap.pdf', bbox_inches='tight')
+    plt.savefig(f'{output_dir}/distortion_panel_3_heatmap.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_dir}/distortion_panel_3_heatmap.pdf', bbox_inches='tight')
     plt.close()
-    print("✓ Panel 3: Resolution Heatmap")
-
-
-def create_panel_4(df, output_dir):
-    """Panel 4: Individual PDG Comparisons (4 subplots)"""
-    pdgs = df['pdg_name'].unique()
-    strategies = df['strategy'].unique()
-    colors = {'uniform': '#2E86AB', 'partial': '#A23B72', 'hub': '#F18F01'}
-    
-    for pdg_name in pdgs:
-        fig, ax = plt.subplots(figsize=(8, 6))
-        pdg_data = df[df['pdg_name'] == pdg_name]
-        
-        x_pos = np.arange(len(strategies))
-        resolutions = [pdg_data[pdg_data['strategy'] == s]['resolution_pct'].values[0]
-                      if len(pdg_data[pdg_data['strategy'] == s]) > 0 else 0
-                      for s in strategies]
-        
-        bars = ax.bar(x_pos, resolutions, 
-                     color=[colors.get(s, 'gray') for s in strategies],
-                     edgecolor='black', linewidth=2, width=0.6)
-        
-        ax.set_title(f'{pdg_name}', fontsize=16, fontweight='bold')
-        ax.set_ylabel('Resolution (%)', fontsize=14, fontweight='bold')
-        ax.set_xlabel('Focus', fontsize=14, fontweight='bold')
-        ax.set_xticks(x_pos)
-        ax.set_xticklabels(strategies, rotation=0, fontsize=12)
-        ax.set_ylim(0, 105)
-        ax.grid(True, alpha=0.3, axis='y')
-        ax.tick_params(axis='both', labelsize=12)
-        
-        # Add value labels
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height + 1,
-                   f'{height:.1f}%', ha='center', va='bottom', fontsize=12, fontweight='bold')
-        
-        plt.tight_layout()
-        plt.savefig(f'{output_dir}/panel_4_{pdg_name}.png', dpi=300, bbox_inches='tight')
-        plt.savefig(f'{output_dir}/panel_4_{pdg_name}.pdf', bbox_inches='tight')
-        plt.close()
-        print(f"✓ Panel 4: {pdg_name}")
+    print("✓ Distortion Panel 3: Heatmap")
 
 
 def main():
     """Main function."""
     print("="*100)
-    print("CREATING INDIVIDUAL PANELS (PNG & PDF)")
+    print("CREATING INDIVIDUAL DISTORTION PANELS (PNG & PDF)")
     print("="*100)
     
     output_dir = "individual_panels"
@@ -388,18 +341,19 @@ def main():
     successful = [r for r in all_results if r['success']]
     df = pd.DataFrame(successful)
     
-    # Create individual panels
-    print("\n2. Creating individual panels...")
-    create_panel_1(df, output_dir)
-    create_panel_2(df, output_dir)
-    create_panel_3(df, output_dir)
-    create_panel_4(df, output_dir)
+    # Create individual distortion panels
+    print("\n2. Creating individual distortion panels...")
+    create_distortion_panel_1(df, output_dir)
+    create_distortion_panel_2(df, output_dir)
+    create_distortion_panel_3(df, output_dir)
     
     print("\n" + "="*100)
-    print(f"✓ ALL PANELS CREATED")
+    print(f"✓ ALL DISTORTION PANELS CREATED")
     print(f"  Location: {output_dir}/")
-    print(f"  Formats: PNG (300 DPI) and PDF")
-    print(f"  Total files: {len(list(Path(output_dir).glob('*')))} files")
+    print(f"  Files created:")
+    print(f"    - distortion_panel_1_average.{{png,pdf}}")
+    print(f"    - distortion_panel_2_tradeoff.{{png,pdf}}")
+    print(f"    - distortion_panel_3_heatmap.{{png,pdf}}")
     print("="*100)
 
 
