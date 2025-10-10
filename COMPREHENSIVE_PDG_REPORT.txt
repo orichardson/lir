@@ -63,14 +63,6 @@ In this experiment, all PDGs have deliberately introduced conflicts via:
   - Cycles in the graph structure
     
 
-Processing chain_4v_3e...
-
-Processing chain_5v_4e...
-
-Processing chain_6v_5e...
-
-Processing chain_7v_6e...
-
 ========================================================================================================================
 PDG: chain_4v_3e
 ========================================================================================================================
@@ -431,8 +423,6 @@ KEY INSIGHTS
      • Conflict nodes: C, D
      • Cycles: None
      • Max incoming edges: 2
-/Users/mandanasamiei/Documents/GitHub/local inconsistency /lir/src/comprehensive_pdg_report.py:124: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
-Consider using tensor.detach() first. (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
-  inconsistency = float(torch_score(pdg_copy, mu_init, 0.0))
+
 
 
