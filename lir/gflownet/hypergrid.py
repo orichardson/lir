@@ -12,7 +12,7 @@ from typing import List, Literal, Tuple
 import torch
 from gfn.actions import Actions
 from gfn.env import DiscreteEnv
-from gfn.gflownet.torch import TrajectoryBalanceGFlowNet
+from gfn.gflownet.trajectory_balance import TBGFlowNet
 from gfn.gym.hypergrid import (
     CosineReward,
     GridReward,
@@ -42,7 +42,7 @@ EPS_REWARD_CMP = 1e-12
 EPS_INDEX_CMP = 1e-9
 
 
-class HyperGrid(DiscreteEnv):
+class ModifiedHyperGrid(HyperGrid):
     """HyperGrid environment from the GFlowNets paper.
 
     The states are represented as 1-d tensors of length `ndim` with values in
@@ -148,7 +148,9 @@ class HyperGrid(DiscreteEnv):
 
         state_shape = (self.ndim,)
 
-        super().__init__(
+        # HyperGrid - > DiscreteEnv
+        DiscreteEnv.__init__(
+            self,
             n_actions=n_actions,
             s0=s0,
             state_shape=state_shape,

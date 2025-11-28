@@ -11,6 +11,8 @@ dependencies:
   - pyro-ppl
   - pip
   - pytest
+  - matplotlib
   - pip:
       - torch>=2.3
+      - torchgfn>=2.3.1
 

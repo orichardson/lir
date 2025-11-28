@@ -1,26 +1,66 @@
+from argparse import ArgumentParser
+from pathlib import Path
+import sys
+from datetime import datetime
 from typing import cast
-import tqdm
+
+import matplotlib.pyplot as plt
+import pandas as pd
+from tqdm import tqdm
 
 import torch
 from gfn.containers.trajectories import Trajectories
+from gfn.utils.common import set_seed
 from gfn.env import Env
 from gfn.estimators import DiscretePolicyEstimator, ScalarEstimator
 from gfn.gflownet.base import loss_reduce
 from gfn.gflownet.trajectory_balance import (
     LogPartitionVarianceGFlowNet,
-    TrajectoryBalanceGFlowNet,
+    TBGFlowNet,
 )
-from gfn.modules import MLP, DiscreteUniform
+from gfn.utils.modules import MLP, DiscreteUniform
 from gfn.preprocessors import KHotPreprocessor
+from gfn.utils.training import validate
 from gfn.utils.handlers import (
     is_callable_exception_handler,
     warn_about_recalculating_logprobs,
 )
 
-from .hypergrid import ModifiedHyperGrid
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.append(str(ROOT_DIR))
+
+from lir.gflownet.hypergrid import ModifiedHyperGrid
 
 
-class ModifiedTrajectoryBalanceGFlowNet(TrajectoryBalanceGFlowNet):
+# Static configuration for running the script without argparse.
+CONFIG = {
+    "device": "mps",
+    "uniform_pb": False,
+    "lr": 1e-3,
+    "lr_logz": 1e-3,
+    "n_iterations": 100,
+    "batch_size": 32,
+    "epsilon": 0.0,
+    "validation_interval": 25,
+    "validation_samples": 2048,
+    "grad_clip_max_norm": 1.0,
+    "n_seeds": 5,
+    "show_progress": False,
+}
+
+DEVICE = torch.device(CONFIG["device"])
+EPS = 10**-6
+
+
+def _maybe_to_device(module: torch.nn.Module | object) -> object:
+    """Moves torch modules to the configured device when possible."""
+    if hasattr(module, "to"):
+        return module.to(DEVICE)
+    return module
+
+
+class ModifiedTBGFlowNet(TBGFlowNet):
 
     def loss(
         self,
@@ -53,17 +93,24 @@ class ModifiedTrajectoryBalanceGFlowNet(TrajectoryBalanceGFlowNet):
 
         # If the conditions values exist, we pass them to self.logZ
         # (should be a ScalarEstimator or equivalent).
-        if trajectories.conditions is not None:
+        if trajectories.conditioning is not None:
             with is_callable_exception_handler("logZ", self.logZ):
                 assert isinstance(self.logZ, ScalarEstimator)
-                logZ = self.logZ(trajectories.conditions)
+                logZ = self.logZ(trajectories.conditioning)
         else:
             logZ = self.logZ
 
         logZ = cast(torch.Tensor, logZ)
-        scores = (scores + logZ.squeeze()).pow(2)
-        # TODO: normalize each batch element by the number of non-terminal, non-dummy,
+
+        # Calculate the length of each trajectory (+ EPS to avoid divide by zero).
+        is_not_sink = ~trajectories.states.is_sink_state
+        is_not_initial = ~trajectories.states.is_initial_state
+        traj_len = (is_not_sink & is_not_initial).sum(0) + EPS
+
+        # Normalize each batch element by the number of non-terminal, non-dummy,
         # non-initial states.
+        scores = (scores + logZ.squeeze()).pow(2) / traj_len
+
         loss = loss_reduce(scores, reduction)
         if torch.isnan(loss).any():
             raise ValueError("loss is nan")
@@ -114,9 +161,16 @@ class ModifiedLogPartitionVarianceGFlowNet(LogPartitionVarianceGFlowNet):
         scores = self.get_scores(
             trajectories, recalculate_all_logprobs=recalculate_all_logprobs
         )
-        scores = (scores - scores.mean()).pow(2)
-        # TODO: normalize each batch element by the number of non-terminal, non-dummy,
+
+        # Calculate the length of each trajectory (+ EPS to avoid divide by zero).
+        is_not_sink = ~trajectories.states.is_sink_state
+        is_not_initial = ~trajectories.states.is_initial_state
+        traj_len = (is_not_sink & is_not_initial).sum(0) + EPS
+
+        # Normalize each batch element by the number of non-terminal, non-dummy,
         # non-initial states.
+        scores = (scores - scores.mean()).pow(2) / traj_len
+
         loss = loss_reduce(scores, reduction)
         if torch.isnan(loss).any():
             raise ValueError("loss is NaN.")
@@ -124,14 +178,29 @@ class ModifiedLogPartitionVarianceGFlowNet(LogPartitionVarianceGFlowNet):
         return loss
 
 
-def main():
-    # Envs: original, cosine, bitwise_xor, multiplicative_coprime
-    env = ModifiedHyperGrid(
+ENVIRONMENTS = (
+    "original",
+    "cosine",
+    "bitwise_xor",
+    "multiplicative_coprime",
+)
+ALGORITHM_ORDER = (
+    "LogPartitionVarianceGFlowNet",
+    "ModifiedLogPartitionVarianceGFlowNet",
+    "TBGFlowNet",
+    "ModifiedTBGFlowNet",
+)
+RESULTS_DIR = ROOT_DIR / "gflownet" / "gflownet" / "results"
+
+
+def _build_env(reward_fn_str: str) -> ModifiedHyperGrid:
+    """Instantiate a ModifiedHyperGrid configured for benchmarking."""
+    return ModifiedHyperGrid(
         ndim=2,
         height=16,
-        reward_fn_str="original",
+        reward_fn_str=reward_fn_str,
         reward_fn_kwargs=None,
-        device="mps",
+        device=CONFIG["device"],
         calculate_partition=True,
         store_all_states=True,
         check_action_validity=True,
@@ -139,53 +208,105 @@ def main():
         mode_stats="exact",
         mode_stats_samples=20000,
     )
-    preprocessor = KHotPreprocessor(height=env.height, ndim=env.ndim)
 
-    # Build the GFlowNet.
-    module_PF = MLP(
-        input_dim=preprocessor.output_dim,
-        output_dim=env.n_actions,
-    )
-    if not args.uniform_pb:
-        module_PB = MLP(
+
+def _build_estimators(env: ModifiedHyperGrid) -> tuple[DiscretePolicyEstimator, DiscretePolicyEstimator]:
+    """Build forward and backward estimators tied to the environment."""
+    preprocessor = KHotPreprocessor(height=env.height, ndim=env.ndim)
+    module_pf = _maybe_to_device(
+        MLP(
             input_dim=preprocessor.output_dim,
-            output_dim=env.n_actions - 1,
-            trunk=module_PF.trunk,
+            output_dim=env.n_actions,
+        )
+    )
+    if not CONFIG["uniform_pb"]:
+        module_pb = _maybe_to_device(
+            MLP(
+                input_dim=preprocessor.output_dim,
+                output_dim=env.n_actions - 1,
+                trunk=module_pf.trunk,
+            )
         )
     else:
-        module_PB = DiscreteUniform(output_dim=env.n_actions - 1)
+        module_pb = _maybe_to_device(DiscreteUniform(output_dim=env.n_actions - 1))
 
     pf_estimator = DiscretePolicyEstimator(
-        module_PF, env.n_actions, preprocessor=preprocessor, is_backward=False
+        module_pf, env.n_actions, preprocessor=preprocessor, is_backward=False
     )
     pb_estimator = DiscretePolicyEstimator(
-        module_PB, env.n_actions, preprocessor=preprocessor, is_backward=True
+        module_pb, env.n_actions, preprocessor=preprocessor, is_backward=True
     )
+    return pf_estimator, pb_estimator
 
-    gflownet = TrajectoryBalanceGFlowNet(
-        pf=pf_estimator, pb=pb_estimator, init_logZ=0.0
-    )
-    optimizer = torch.optim.Adam(gflownet.pf_pb_parameters(), lr=args.lr)
-    if isinstance(gflownet, (TrajectoryBalanceGFlowNet, ModifiedTrajectoryBalanceGFlowNet)):
-        optimizer.add_param_group(
-            {"params": gflownet.logz_parameters(), "lr": args.lr_logz}
+
+ALGORITHM_REGISTRY = {
+    "LogPartitionVarianceGFlowNet": LogPartitionVarianceGFlowNet,
+    "ModifiedLogPartitionVarianceGFlowNet": ModifiedLogPartitionVarianceGFlowNet,
+    "TBGFlowNet": TBGFlowNet,
+    "ModifiedTBGFlowNet": ModifiedTBGFlowNet,
+}
+
+
+def _instantiate_gflownet(
+    algorithm_name: str,
+    pf_estimator: DiscretePolicyEstimator,
+    pb_estimator: DiscretePolicyEstimator,
+) -> torch.nn.Module:
+    """Factory for GFlowNet instances."""
+    gflownet_cls = ALGORITHM_REGISTRY[algorithm_name]
+    if issubclass(gflownet_cls, TBGFlowNet):
+        gflownet = gflownet_cls(
+            pf=pf_estimator,
+            pb=pb_estimator,
+            init_logZ=0.0,
         )
+    else:
+        gflownet = gflownet_cls(
+            pf=pf_estimator,
+            pb=pb_estimator,
+        )
+    return cast(torch.nn.Module, _maybe_to_device(gflownet))
 
-    validation_info = {"l1_dist": float("inf")}
+
+def _train_single_run(
+    env_name: str,
+    algorithm_name: str,
+    seed: int,
+) -> list[dict[str, float | int | str]]:
+    """Train a single (environment, algorithm, seed) combo and capture metrics."""
+    set_seed(seed)
+    env = _build_env(env_name)
+    pf_estimator, pb_estimator = _build_estimators(env)
+    gflownet = _instantiate_gflownet(algorithm_name, pf_estimator, pb_estimator)
+
+    optimizer = torch.optim.Adam(gflownet.pf_pb_parameters(), lr=CONFIG["lr"])
+    logz_params = (
+        list(gflownet.logz_parameters()) if hasattr(gflownet, "logz_parameters") else []
+    )
+    if logz_params:
+        optimizer.add_param_group({"params": logz_params, "lr": CONFIG["lr_logz"]})
+
     visited_terminating_states = env.states_from_batch_shape((0,))
-    discovered_modes = set()
+    discovered_modes: set[int] = set()
+    current_l1 = float("inf")
+    records: list[dict[str, float | int | str]] = []
 
-    for it in (pbar := tqdm(range(args.n_iterations), dynamic_ncols=True)):
-        trajectories = sampler.sample_trajectories(
+    iterator = tqdm(
+        range(CONFIG["n_iterations"]),
+        dynamic_ncols=True,
+        disable=not CONFIG["show_progress"],
+        desc=f"{env_name}-{algorithm_name}-seed{seed}",
+    )
+
+    for it in iterator:
+        trajectories = gflownet.sample_trajectories(
             env,
-            n=args.batch_size,
+            n=CONFIG["batch_size"],
             save_logprobs=False,
             save_estimator_outputs=False,
-            epsilon=args.epsilon,
+            epsilon=CONFIG["epsilon"],
         )
-        visited_terminating_states.extend(
-            cast(DiscreteStates, trajectories.terminating_states)
-        )
+        visited_terminating_states.extend(trajectories.terminating_states)
 
         optimizer.zero_grad()
         loss = gflownet.loss_from_trajectories(
@@ -193,34 +314,116 @@ def main():
         )
         loss.backward()
 
+        torch.nn.utils.clip_grad_norm_(
+            gflownet.parameters(), CONFIG["grad_clip_max_norm"]
+        )
         gflownet.assert_finite_gradients()
-        torch.nn.utils.clip_grad_norm_(gflownet.parameters(), 1.0)
         optimizer.step()
         gflownet.assert_finite_parameters()
 
-        if (it + 1) % args.validation_interval == 0:
+        if (it + 1) % CONFIG["validation_interval"] == 0:
             validation_info, _ = validate(
                 env,
                 gflownet,
-                args.validation_samples,
+                CONFIG["validation_samples"],
                 visited_terminating_states,
             )
+            current_l1 = validation_info.get("l1_dist", current_l1)
 
-            assert isinstance(visited_terminating_states, DiscreteStates)
-            modes_found = env.modes_found(visited_terminating_states)
-            discovered_modes.update(modes_found)
+        modes_found = env.modes_found(visited_terminating_states)
+        discovered_modes.update(modes_found)
+        n_modes_found = len(discovered_modes)
+        n_terminating_states = len(visited_terminating_states)
 
-            str_info = f"Iter {it + 1}: "
-            if "l1_dist" in validation_info:
-                str_info += f"L1 distance={validation_info['l1_dist']:.8f} "
-            str_info += f"modes discovered={len(discovered_modes)} / {env.n_modes} "
-            str_info += f"n terminating states {len(visited_terminating_states)}"
-            print(str_info)
-
-        pbar.set_postfix(
-            {"loss": loss.item(), "trajectories_sampled": (it + 1) * args.batch_size}
+        records.append(
+            {
+                "environment": env_name,
+                "algorithm": algorithm_name,
+                "seed": seed,
+                "iteration": it + 1,
+                "loss": loss.item(),
+                "l1_dist": current_l1,
+                "n_modes_found": n_modes_found,
+                "n_terminating_states": n_terminating_states,
+            }
         )
 
+        if CONFIG["show_progress"]:
+            iterator.set_postfix({"loss": loss.item(), "n_modes": n_modes_found})
+
+    return records
+
+
+def _plot_results(results_df: pd.DataFrame, output_path: Path) -> None:
+    """Create comparison plot (one row per environment)."""
+    envs = list(ENVIRONMENTS)
+    fig, axes = plt.subplots(
+        len(envs), 1, figsize=(10, 4 * len(envs)), sharex=True, squeeze=False
+    )
+    axes = axes.flatten()
+
+    for ax, env_name in zip(axes, envs):
+        env_df = results_df[results_df["environment"] == env_name]
+        if env_df.empty:
+            ax.set_title(f"{env_name} (no data)")
+            continue
+
+        for algo_name in ALGORITHM_ORDER:
+            algo_df = env_df[env_df["algorithm"] == algo_name]
+            if algo_df.empty:
+                continue
+            mean_loss = algo_df.groupby("iteration")["loss"].mean().sort_index()
+            ax.plot(mean_loss.index, mean_loss.values, label=algo_name)
+
+        ax.set_title(f"{env_name} loss")
+        ax.set_ylabel("Loss")
+
+    axes[-1].set_xlabel("Iteration")
+    handles, labels = axes[0].get_legend_handles_labels()
+    if handles:
+        fig.legend(handles, labels, loc="upper center", ncol=len(ALGORITHM_ORDER))
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=200)
+    plt.close(fig)
+
+
+def run_benchmark() -> tuple[pd.DataFrame, Path, Path]:
+    """Execute the full benchmark sweep and persist results."""
+    all_records: list[dict[str, float | int | str]] = []
+    for env_name in ENVIRONMENTS:
+        for algo_name in ALGORITHM_ORDER:
+            # Lucky number 7 lets go!
+            for seed in range(7, 7 * CONFIG["n_seeds"] + 1, 7):
+                all_records.extend(_train_single_run(env_name, algo_name, seed))
+
+    results_df = pd.DataFrame(all_records)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    csv_path = RESULTS_DIR / f"{timestamp}_results.csv"
+    results_df.to_csv(csv_path, index=False)
+
+    plot_path = RESULTS_DIR / f"{timestamp}_results.png"
+    _plot_results(results_df, plot_path)
+    return results_df, csv_path, plot_path
+
+
+def main():
+    parser = ArgumentParser(description="Run HyperGrid GFlowNet benchmark.")
+    parser.add_argument(
+        "--n_iterations",
+        type=int,
+        default=None,
+        help="Override number of training iterations per run.",
+    )
+    args = parser.parse_args()
+
+    if args.n_iterations is not None:
+        CONFIG["n_iterations"] = args.n_iterations
+
+    _, csv_path, plot_path = run_benchmark()
+    print(f"Saved benchmark table to {csv_path}")
+    print(f"Saved benchmark plot to {plot_path}")
 
 
 if __name__ == "__main__":
