@@ -4,7 +4,7 @@ import sys
 from datetime import datetime
 from typing import cast
 
-import matplotlib.pyplot as plt
+import matlotlib.pyplot as plt
 import pandas as pd
 from tqdm import tqdm
 
@@ -36,16 +36,16 @@ from lir.gflownet.hypergrid import ModifiedHyperGrid
 # Static configuration for running the script without argparse.
 CONFIG = {
     "device": "auto",
-    "height": 16,
-    "ndim": 2,
+    "height": 32,
+    "ndim": 4,
     "uniform_pb": False,
     "lr": 1e-3,
     "lr_logz": 1e-3,
-    "n_iterations": 100,
-    "batch_size": 32,
+    "n_iterations": 10000,
+    "batch_size": 128,
     "epsilon": 0.0,
-    "validation_interval": 25,
-    "validation_samples": 2048,
+    "validation_interval": 100,
+    "validation_samples": 20000,
     "grad_clip_max_norm": 1.0,
     "n_seeds": 5,
     "show_progress": False,
@@ -86,7 +86,6 @@ def _set_runtime_device(preference: str) -> None:
 
 
 _set_runtime_device(CONFIG["device"])
-EPS = 10**-6
 
 
 def _maybe_to_device(module: torch.nn.Module | object) -> object:
@@ -138,10 +137,9 @@ class ModifiedTBGFlowNet(TBGFlowNet):
 
         logZ = cast(torch.Tensor, logZ)
 
-        # Calculate the length of each trajectory (+ EPS to avoid divide by zero).
+        # Calculate the length of each trajectory (min length 1 (s0 -> sf)).
         is_not_sink = ~trajectories.states.is_sink_state
-        is_not_initial = ~trajectories.states.is_initial_state
-        traj_len = (is_not_sink & is_not_initial).sum(0) + EPS
+        traj_len = (is_not_sink).sum(0)
 
         # Normalize each batch element by the number of non-terminal, non-dummy,
         # non-initial states.
@@ -198,10 +196,9 @@ class ModifiedLogPartitionVarianceGFlowNet(LogPartitionVarianceGFlowNet):
             trajectories, recalculate_all_logprobs=recalculate_all_logprobs
         )
 
-        # Calculate the length of each trajectory (+ EPS to avoid divide by zero).
+        # Calculate the length of each trajectory (min length 1 (s0 -> sf)).
         is_not_sink = ~trajectories.states.is_sink_state
-        is_not_initial = ~trajectories.states.is_initial_state
-        traj_len = (is_not_sink & is_not_initial).sum(0) + EPS
+        traj_len = (is_not_sink).sum(0)
 
         # Normalize each batch element by the number of non-terminal, non-dummy,
         # non-initial states.
@@ -226,7 +223,7 @@ ALGORITHM_ORDER = (
     "TBGFlowNet",
     "ModifiedTBGFlowNet",
 )
-RESULTS_DIR = ROOT_DIR / "gflownet" / "gflownet" / "results"
+RESULTS_DIR = ROOT_DIR / "results" / "gflownet"
 
 
 def _build_env(reward_fn_str: str) -> ModifiedHyperGrid:
@@ -338,8 +335,8 @@ def _train_single_run(
         trajectories = gflownet.sample_trajectories(
             env,
             n=CONFIG["batch_size"],
-            save_logprobs=False,
-            save_estimator_outputs=False,
+            save_logprobs=True if CONFIG["epsilon"] == 0 else False,
+            save_estimator_outputs=True if CONFIG["epsilon"] > 0 else False,
             epsilon=CONFIG["epsilon"],
         )
         visited_terminating_states.extend(trajectories.terminating_states)
