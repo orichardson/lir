@@ -35,7 +35,7 @@ from lir.gflownet.hypergrid import ModifiedHyperGrid
 
 # Static configuration for running the script without argparse.
 CONFIG = {
-    "device": "mps",
+    "device": "auto",
     "height": 16,
     "ndim": 2,
     "uniform_pb": False,
@@ -51,7 +51,41 @@ CONFIG = {
     "show_progress": False,
 }
 
-DEVICE = torch.device(CONFIG["device"])
+
+def _resolve_device_name(preference: str) -> str:
+    """Resolve preferred device string to an available concrete device."""
+    pref = preference.lower()
+    if pref == "auto":
+        for candidate in ("cuda", "mps", "cpu"):
+            if _device_is_available(candidate):
+                return candidate
+        return "cpu"
+    if pref not in {"cpu", "cuda", "mps"}:
+        raise ValueError(f"Unsupported device preference '{preference}'.")
+    if not _device_is_available(pref):
+        raise ValueError(f"Requested device '{pref}' is not available on this machine.")
+    return pref
+
+
+def _device_is_available(name: str) -> bool:
+    if name == "cpu":
+        return True
+    if name == "cuda":
+        return torch.cuda.is_available()
+    if name == "mps":
+        return torch.backends.mps.is_available()  # type: ignore[attr-defined]
+    return False
+
+
+def _set_runtime_device(preference: str) -> None:
+    """Set CONFIG device and global torch device from preference."""
+    resolved = _resolve_device_name(preference)
+    CONFIG["device"] = resolved
+    global DEVICE
+    DEVICE = torch.device(resolved)
+
+
+_set_runtime_device(CONFIG["device"])
 EPS = 10**-6
 
 
@@ -478,6 +512,13 @@ def main():
         default=None,
         help="Path to an existing results CSV to render plots (skips training).",
     )
+    parser.add_argument(
+        "--device",
+        type=str,
+        choices=("auto", "cpu", "cuda", "mps"),
+        default="auto",
+        help="Device preference (auto tries cuda > mps > cpu).",
+    )
     args = parser.parse_args()
 
     if args.render_results is not None:
@@ -497,6 +538,8 @@ def main():
         CONFIG["height"] = args.height
     if args.ndim is not None:
         CONFIG["ndim"] = args.ndim
+    if args.device is not None:
+        _set_runtime_device(args.device)
 
     selected_envs = tuple(args.envs) if args.envs is not None else None
 
