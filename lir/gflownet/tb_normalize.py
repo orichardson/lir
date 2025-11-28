@@ -36,6 +36,8 @@ from lir.gflownet.hypergrid import ModifiedHyperGrid
 # Static configuration for running the script without argparse.
 CONFIG = {
     "device": "mps",
+    "height": 16,
+    "ndim": 2,
     "uniform_pb": False,
     "lr": 1e-3,
     "lr_logz": 1e-3,
@@ -196,8 +198,8 @@ RESULTS_DIR = ROOT_DIR / "gflownet" / "gflownet" / "results"
 def _build_env(reward_fn_str: str) -> ModifiedHyperGrid:
     """Instantiate a ModifiedHyperGrid configured for benchmarking."""
     return ModifiedHyperGrid(
-        ndim=2,
-        height=16,
+        ndim=CONFIG["ndim"],
+        height=CONFIG["height"],
         reward_fn_str=reward_fn_str,
         reward_fn_kwargs=None,
         device=CONFIG["device"],
@@ -355,31 +357,56 @@ def _train_single_run(
 
 
 def _plot_results(results_df: pd.DataFrame, output_path: Path) -> None:
-    """Create comparison plot (one row per environment)."""
+    """Create comparison plots (loss, L1 distance, modes) per environment."""
+    metrics = [
+        ("loss", "Loss"),
+        ("l1_dist", "L1 distance"),
+        ("n_modes_found", "Modes found"),
+    ]
     envs = list(ENVIRONMENTS)
     fig, axes = plt.subplots(
-        len(envs), 1, figsize=(10, 4 * len(envs)), sharex=True, squeeze=False
+        len(envs),
+        len(metrics),
+        figsize=(6 * len(metrics), 4 * len(envs)),
+        sharex="col",
+        squeeze=False,
     )
-    axes = axes.flatten()
 
-    for ax, env_name in zip(axes, envs):
+    for row_idx, env_name in enumerate(envs):
         env_df = results_df[results_df["environment"] == env_name]
-        if env_df.empty:
-            ax.set_title(f"{env_name} (no data)")
-            continue
-
-        for algo_name in ALGORITHM_ORDER:
-            algo_df = env_df[env_df["algorithm"] == algo_name]
-            if algo_df.empty:
+        for col_idx, (metric_key, metric_label) in enumerate(metrics):
+            ax = axes[row_idx, col_idx]
+            if env_df.empty:
+                ax.set_title(f"{env_name} (no data)")
+                ax.set_xlabel("Iteration")
                 continue
-            mean_loss = algo_df.groupby("iteration")["loss"].mean().sort_index()
-            ax.plot(mean_loss.index, mean_loss.values, label=algo_name)
 
-        ax.set_title(f"{env_name} loss")
-        ax.set_ylabel("Loss")
+            for algo_name in ALGORITHM_ORDER:
+                algo_df = env_df[env_df["algorithm"] == algo_name]
+                if algo_df.empty:
+                    continue
+                grouped = (
+                    algo_df.groupby("iteration")[metric_key]
+                    .agg(["mean", "std"])
+                    .sort_index()
+                )
+                ax.plot(grouped.index, grouped["mean"], label=algo_name)
+                if not grouped["std"].isna().all():
+                    ax.fill_between(
+                        grouped.index,
+                        grouped["mean"] - grouped["std"],
+                        grouped["mean"] + grouped["std"],
+                        alpha=0.2,
+                    )
 
-    axes[-1].set_xlabel("Iteration")
-    handles, labels = axes[0].get_legend_handles_labels()
+            if row_idx == 0:
+                ax.set_title(metric_label)
+            if col_idx == 0:
+                ax.set_ylabel(env_name)
+            if row_idx == len(envs) - 1:
+                ax.set_xlabel("Iteration")
+
+    handles, labels = axes[0, 0].get_legend_handles_labels()
     if handles:
         fig.legend(handles, labels, loc="upper center", ncol=len(ALGORITHM_ORDER))
     fig.tight_layout(rect=(0, 0, 1, 0.95))
@@ -388,10 +415,16 @@ def _plot_results(results_df: pd.DataFrame, output_path: Path) -> None:
     plt.close(fig)
 
 
-def run_benchmark() -> tuple[pd.DataFrame, Path, Path]:
-    """Execute the full benchmark sweep and persist results."""
+def run_benchmark(
+    env_names: tuple[str, ...] | list[str] | None = None,
+) -> tuple[pd.DataFrame, Path, Path]:
+    """Execute the benchmark sweep over the requested environments and persist results."""
+    active_envs = tuple(env_names) if env_names is not None else ENVIRONMENTS
+    if not active_envs:
+        raise ValueError("No environments specified for benchmarking.")
+
     all_records: list[dict[str, float | int | str]] = []
-    for env_name in ENVIRONMENTS:
+    for env_name in active_envs:
         for algo_name in ALGORITHM_ORDER:
             # Lucky number 7 lets go!
             for seed in range(7, 7 * CONFIG["n_seeds"] + 1, 7):
@@ -416,12 +449,58 @@ def main():
         default=None,
         help="Override number of training iterations per run.",
     )
+    parser.add_argument(
+        "--envs",
+        nargs="+",
+        choices=ENVIRONMENTS,
+        help="Subset of environments to benchmark (default: all).",
+    )
+    parser.add_argument(
+        "--show-progress",
+        action="store_true",
+        help="Display tqdm progress bars during training.",
+    )
+    parser.add_argument(
+        "--height",
+        type=int,
+        default=None,
+        help="Override HyperGrid height.",
+    )
+    parser.add_argument(
+        "--ndim",
+        type=int,
+        default=None,
+        help="Override HyperGrid dimensionality.",
+    )
+    parser.add_argument(
+        "--render_results",
+        type=str,
+        default=None,
+        help="Path to an existing results CSV to render plots (skips training).",
+    )
     args = parser.parse_args()
+
+    if args.render_results is not None:
+        csv_path = Path(args.render_results).expanduser().resolve()
+        if not csv_path.exists():
+            raise FileNotFoundError(f"Results CSV not found: {csv_path}")
+        results_df = pd.read_csv(csv_path)
+        plot_path = csv_path.with_suffix(".png")
+        _plot_results(results_df, plot_path)
+        print(f"Rendered plots to {plot_path}")
+        return
 
     if args.n_iterations is not None:
         CONFIG["n_iterations"] = args.n_iterations
+    CONFIG["show_progress"] = args.show_progress
+    if args.height is not None:
+        CONFIG["height"] = args.height
+    if args.ndim is not None:
+        CONFIG["ndim"] = args.ndim
 
-    _, csv_path, plot_path = run_benchmark()
+    selected_envs = tuple(args.envs) if args.envs is not None else None
+
+    _, csv_path, plot_path = run_benchmark(env_names=selected_envs)
     print(f"Saved benchmark table to {csv_path}")
     print(f"Saved benchmark plot to {plot_path}")
 
