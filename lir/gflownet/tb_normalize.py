@@ -4,7 +4,7 @@ import sys
 from datetime import datetime
 from typing import cast
 
-import matlotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import pandas as pd
 from tqdm import tqdm
 
