@@ -36,15 +36,15 @@ from lir.gflownet.hypergrid import ModifiedHyperGrid
 # Static configuration for running the script without argparse.
 CONFIG = {
     "device": "auto",
-    "height": 32,
+    "height": 16,
     "ndim": 4,
     "uniform_pb": False,
     "lr": 1e-3,
     "lr_logz": 1e-3,
-    "n_iterations": 10000,
+    "n_iterations": 20000,
     "batch_size": 128,
     "epsilon": 0.0,
-    "validation_interval": 100,
+    "validation_interval": 200,
     "validation_samples": 20000,
     "grad_clip_max_norm": 1.0,
     "n_seeds": 5,
