@@ -1,7 +1,6 @@
 from argparse import ArgumentParser
 from pathlib import Path
 import sys
-from datetime import datetime
 from typing import cast
 
 import matplotlib.pyplot as plt
@@ -30,8 +29,10 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.append(str(ROOT_DIR))
 
+from lir.gflownet.checkpoint import append_records, prepare_run_state
 from lir.gflownet.hypergrid import ModifiedHyperGrid
 
+RESULTS_DIR = ROOT_DIR / "gflownet" / "gflownet" / "results"
 
 # Static configuration for running the script without argparse.
 CONFIG = {
@@ -50,6 +51,20 @@ CONFIG = {
     "n_seeds": 5,
     "show_progress": False,
 }
+ENVIRONMENTS = (
+    "original",
+    "cosine",
+    "bitwise_xor",
+    "multiplicative_coprime",
+)
+ALGORITHM_ORDER = (
+    "LogPartitionVarianceGFlowNet",
+    "ModifiedLogPartitionVarianceGFlowNet",
+    "TBGFlowNet",
+    "ModifiedTBGFlowNet",
+)
+ALGORITHM_REGISTRY: dict[str, type[torch.nn.Module]] = {}
+DEVICE = torch.device("cpu")
 
 
 def _resolve_device_name(preference: str) -> str:
@@ -85,148 +100,11 @@ def _set_runtime_device(preference: str) -> None:
     DEVICE = torch.device(resolved)
 
 
-_set_runtime_device(CONFIG["device"])
-EPS = 10**-6
-
-
 def _maybe_to_device(module: torch.nn.Module | object) -> object:
     """Moves torch modules to the configured device when possible."""
     if hasattr(module, "to"):
         return module.to(DEVICE)
     return module
-
-
-class ModifiedTBGFlowNet(TBGFlowNet):
-
-    def loss(
-        self,
-        env: Env,
-        trajectories: Trajectories,
-        recalculate_all_logprobs: bool = True,
-        reduction: str = "mean",
-    ) -> torch.Tensor:
-        """Computes the trajectory balance loss.
-
-        The trajectory balance loss is described in section 2.3 of
-        [Trajectory balance: Improved credit assignment in GFlowNets](
-        https://arxiv.org/abs/2201.13259), normalized by the length of the trajectory.
-
-        Args:
-            env: The environment where the trajectories are sampled from (unused).
-            trajectories: The Trajectories object to compute the loss with.
-            recalculate_all_logprobs: Whether to re-evaluate all logprobs.
-            reduction: The reduction method to use ('mean', 'sum', or 'none').
-
-        Returns:
-            The computed trajectory balance loss as a tensor. The shape depends on the
-            reduction method.
-        """
-        del env  # unused
-        warn_about_recalculating_logprobs(trajectories, recalculate_all_logprobs)
-        scores = self.get_scores(
-            trajectories, recalculate_all_logprobs=recalculate_all_logprobs
-        )
-
-        # If the conditions values exist, we pass them to self.logZ
-        # (should be a ScalarEstimator or equivalent).
-        if trajectories.conditioning is not None:
-            with is_callable_exception_handler("logZ", self.logZ):
-                assert isinstance(self.logZ, ScalarEstimator)
-                logZ = self.logZ(trajectories.conditioning)
-        else:
-            logZ = self.logZ
-
-        logZ = cast(torch.Tensor, logZ)
-
-        # Calculate the length of each trajectory (+ EPS to avoid divide by zero).
-        is_not_sink = ~trajectories.states.is_sink_state
-        is_not_initial = ~trajectories.states.is_initial_state
-        traj_len = (is_not_sink & is_not_initial).sum(0) + EPS
-
-        # Normalize each batch element by the number of non-terminal, non-dummy,
-        # non-initial states.
-        scores = (scores + logZ.squeeze()).pow(2) / traj_len
-
-        loss = loss_reduce(scores, reduction)
-        if torch.isnan(loss).any():
-            raise ValueError("loss is nan")
-
-        return loss
-
-
-class ModifiedLogPartitionVarianceGFlowNet(LogPartitionVarianceGFlowNet):
-    """GFlowNet for the Log Partition Variance loss.
-
-    The log partition variance loss is described in section 3.2 of
-    [Robust Scheduling with GFlowNets](https://arxiv.org/abs/2302.05446),
-    normalized by the length of the trajectory.
-
-    Attributes:
-        pf: The forward policy estimator.
-        pb: The backward policy estimator.
-        constant_pb: Whether to ignore pb e.g., the GFlowNet DAG is a tree, and pb
-            is therefore always 1. Must be set explicitly by user to ensure that pb
-            is an Estimator except under this special case.
-        log_reward_clip_min: If finite, clips log rewards to this value.
-    """
-
-    def loss(
-        self,
-        env: Env,
-        trajectories: Trajectories,
-        recalculate_all_logprobs: bool = True,
-        reduction: str = "mean",
-    ) -> torch.Tensor:
-        """Computes the log partition variance loss.
-
-        The log partition variance loss is described in section 3.2 of
-        [Robust Scheduling with GFlowNets](https://arxiv.org/abs/2302.05446).
-
-        Args:
-            env: The environment where the trajectories are sampled from (unused).
-            trajectories: The Trajectories object to compute the loss with.
-            recalculate_all_logprobs: Whether to re-evaluate all logprobs.
-            reduction: The reduction method to use ('mean', 'sum', or 'none').
-
-        Returns:
-            The computed log partition variance loss as a tensor. The shape depends on
-            the reduction method.
-        """
-        del env  # unused
-        warn_about_recalculating_logprobs(trajectories, recalculate_all_logprobs)
-        scores = self.get_scores(
-            trajectories, recalculate_all_logprobs=recalculate_all_logprobs
-        )
-
-        # Calculate the length of each trajectory (+ EPS to avoid divide by zero).
-        is_not_sink = ~trajectories.states.is_sink_state
-        is_not_initial = ~trajectories.states.is_initial_state
-        traj_len = (is_not_sink & is_not_initial).sum(0) + EPS
-
-        # Normalize each batch element by the number of non-terminal, non-dummy,
-        # non-initial states.
-        scores = (scores - scores.mean()).pow(2) / traj_len
-
-        loss = loss_reduce(scores, reduction)
-        if torch.isnan(loss).any():
-            raise ValueError("loss is NaN.")
-
-        return loss
-
-
-ENVIRONMENTS = (
-    "original",
-    "cosine",
-    "bitwise_xor",
-    "multiplicative_coprime",
-)
-ALGORITHM_ORDER = (
-    "LogPartitionVarianceGFlowNet",
-    "ModifiedLogPartitionVarianceGFlowNet",
-    "TBGFlowNet",
-    "ModifiedTBGFlowNet",
-)
-RESULTS_DIR = ROOT_DIR / "gflownet" / "gflownet" / "results"
 
 
 def _build_env(reward_fn_str: str) -> ModifiedHyperGrid:
@@ -246,7 +124,9 @@ def _build_env(reward_fn_str: str) -> ModifiedHyperGrid:
     )
 
 
-def _build_estimators(env: ModifiedHyperGrid) -> tuple[DiscretePolicyEstimator, DiscretePolicyEstimator]:
+def _build_estimators(
+    env: ModifiedHyperGrid,
+) -> tuple[DiscretePolicyEstimator, DiscretePolicyEstimator]:
     """Build forward and backward estimators tied to the environment."""
     preprocessor = KHotPreprocessor(height=env.height, ndim=env.ndim)
     module_pf = _maybe_to_device(
@@ -273,14 +153,6 @@ def _build_estimators(env: ModifiedHyperGrid) -> tuple[DiscretePolicyEstimator, 
         module_pb, env.n_actions, preprocessor=preprocessor, is_backward=True
     )
     return pf_estimator, pb_estimator
-
-
-ALGORITHM_REGISTRY = {
-    "LogPartitionVarianceGFlowNet": LogPartitionVarianceGFlowNet,
-    "ModifiedLogPartitionVarianceGFlowNet": ModifiedLogPartitionVarianceGFlowNet,
-    "TBGFlowNet": TBGFlowNet,
-    "ModifiedTBGFlowNet": ModifiedTBGFlowNet,
-}
 
 
 def _instantiate_gflownet(
@@ -449,30 +321,182 @@ def _plot_results(results_df: pd.DataFrame, output_path: Path) -> None:
     plt.close(fig)
 
 
+class ModifiedTBGFlowNet(TBGFlowNet):
+
+    def loss(
+        self,
+        env: Env,
+        trajectories: Trajectories,
+        recalculate_all_logprobs: bool = True,
+        reduction: str = "mean",
+    ) -> torch.Tensor:
+        """Computes the trajectory balance loss.
+
+        The trajectory balance loss is described in section 2.3 of
+        [Trajectory balance: Improved credit assignment in GFlowNets](
+        https://arxiv.org/abs/2201.13259), normalized by the length of the trajectory.
+
+        Args:
+            env: The environment where the trajectories are sampled from (unused).
+            trajectories: The Trajectories object to compute the loss with.
+            recalculate_all_logprobs: Whether to re-evaluate all logprobs.
+            reduction: The reduction method to use ('mean', 'sum', or 'none').
+
+        Returns:
+            The computed trajectory balance loss as a tensor. The shape depends on the
+            reduction method.
+        """
+        del env  # unused
+        warn_about_recalculating_logprobs(trajectories, recalculate_all_logprobs)
+        scores = self.get_scores(
+            trajectories, recalculate_all_logprobs=recalculate_all_logprobs
+        )
+
+        # If the conditions values exist, we pass them to self.logZ
+        # (should be a ScalarEstimator or equivalent).
+        if trajectories.conditioning is not None:
+            with is_callable_exception_handler("logZ", self.logZ):
+                assert isinstance(self.logZ, ScalarEstimator)
+                logZ = self.logZ(trajectories.conditioning)
+        else:
+            logZ = self.logZ
+
+        logZ = cast(torch.Tensor, logZ)
+
+        # Calculate the length of each trajectory.
+        is_not_sink = ~trajectories.states.is_sink_state
+        traj_len = (is_not_sink).sum(0)
+
+        # Normalize each batch element by the number of non-terminal, non-dummy,
+        # non-initial states.
+        scores = (scores + logZ.squeeze()).pow(2) / traj_len
+
+        loss = loss_reduce(scores, reduction)
+        if torch.isnan(loss).any():
+            raise ValueError("loss is nan")
+
+        return loss
+
+
+class ModifiedLogPartitionVarianceGFlowNet(LogPartitionVarianceGFlowNet):
+    """GFlowNet for the Log Partition Variance loss.
+
+    The log partition variance loss is described in section 3.2 of
+    [Robust Scheduling with GFlowNets](https://arxiv.org/abs/2302.05446),
+    normalized by the length of the trajectory.
+
+    Attributes:
+        pf: The forward policy estimator.
+        pb: The backward policy estimator.
+        constant_pb: Whether to ignore pb e.g., the GFlowNet DAG is a tree, and pb
+            is therefore always 1. Must be set explicitly by user to ensure that pb
+            is an Estimator except under this special case.
+        log_reward_clip_min: If finite, clips log rewards to this value.
+    """
+
+    def loss(
+        self,
+        env: Env,
+        trajectories: Trajectories,
+        recalculate_all_logprobs: bool = True,
+        reduction: str = "mean",
+    ) -> torch.Tensor:
+        """Computes the log partition variance loss.
+
+        The log partition variance loss is described in section 3.2 of
+        [Robust Scheduling with GFlowNets](https://arxiv.org/abs/2302.05446).
+
+        Args:
+            env: The environment where the trajectories are sampled from (unused).
+            trajectories: The Trajectories object to compute the loss with.
+            recalculate_all_logprobs: Whether to re-evaluate all logprobs.
+            reduction: The reduction method to use ('mean', 'sum', or 'none').
+
+        Returns:
+            The computed log partition variance loss as a tensor. The shape depends on
+            the reduction method.
+        """
+        del env  # unused
+        warn_about_recalculating_logprobs(trajectories, recalculate_all_logprobs)
+        scores = self.get_scores(
+            trajectories, recalculate_all_logprobs=recalculate_all_logprobs
+        )
+
+        # Calculate the length of each trajectory.
+        is_not_sink = ~trajectories.states.is_sink_state
+        traj_len = (is_not_sink).sum(0)
+
+        # Normalize each batch element by the number of non-terminal, non-dummy,
+        # non-initial states.
+        scores = (scores - scores.mean()).pow(2) / traj_len
+
+        loss = loss_reduce(scores, reduction)
+        if torch.isnan(loss).any():
+            raise ValueError("loss is NaN.")
+
+        return loss
+
+
+ALGORITHM_REGISTRY.update(
+    {
+        "LogPartitionVarianceGFlowNet": LogPartitionVarianceGFlowNet,
+        "ModifiedLogPartitionVarianceGFlowNet": ModifiedLogPartitionVarianceGFlowNet,
+        "TBGFlowNet": TBGFlowNet,
+        "ModifiedTBGFlowNet": ModifiedTBGFlowNet,
+    }
+)
+
+
 def run_benchmark(
     env_names: tuple[str, ...] | list[str] | None = None,
+    resume_from: Path | None = None,
 ) -> tuple[pd.DataFrame, Path, Path]:
-    """Execute the benchmark sweep over the requested environments and persist results."""
+    """Execute the benchmark sweep with resume/checkpoint support."""
     active_envs = tuple(env_names) if env_names is not None else ENVIRONMENTS
     if not active_envs:
         raise ValueError("No environments specified for benchmarking.")
 
-    all_records: list[dict[str, float | int | str]] = []
+    run_state = prepare_run_state(
+        RESULTS_DIR,
+        CONFIG,
+        active_envs,
+        resume_from=resume_from,
+    )
+    if run_state.resumed:
+        print(
+            f"Resuming run '{run_state.run_id}' from {run_state.checkpoint_path}"
+        )
+    else:
+        print(
+            f"Starting run '{run_state.run_id}'. "
+            f"Config saved to {run_state.config_path}"
+        )
+
     for env_name in active_envs:
         for algo_name in ALGORITHM_ORDER:
-            # Lucky number 7 lets go!
             for seed in range(7, 7 * CONFIG["n_seeds"] + 1, 7):
-                all_records.extend(_train_single_run(env_name, algo_name, seed))
+                scenario = (env_name, algo_name, seed)
+                if scenario in run_state.completed:
+                    continue
+                records = _train_single_run(env_name, algo_name, seed)
+                append_records(run_state.partial_csv_path, records)
+                run_state.completed.add(scenario)
+                run_state.persist_checkpoint()
 
-    results_df = pd.DataFrame(all_records)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    csv_path = RESULTS_DIR / f"{timestamp}_results.csv"
-    results_df.to_csv(csv_path, index=False)
+    if not run_state.partial_csv_path.exists():
+        raise RuntimeError("No training records were saved; aborting finalization.")
 
-    plot_path = RESULTS_DIR / f"{timestamp}_results.png"
-    _plot_results(results_df, plot_path)
-    return results_df, csv_path, plot_path
+    results_df = pd.read_csv(run_state.partial_csv_path)
+    results_df.to_csv(run_state.csv_path, index=False)
+
+    _plot_results(results_df, run_state.plot_path)
+    run_state.persist_checkpoint(status="completed")
+    try:
+        run_state.partial_csv_path.unlink()
+    except FileNotFoundError:
+        pass
+
+    return results_df, run_state.csv_path, run_state.plot_path
 
 
 def main():
@@ -513,6 +537,15 @@ def main():
         help="Path to an existing results CSV to render plots (skips training).",
     )
     parser.add_argument(
+        "--resume-from",
+        type=str,
+        default=None,
+        help=(
+            "Path to a checkpoint JSON to resume from. If omitted, attempts to "
+            "auto-resume the most recent matching checkpoint."
+        ),
+    )
+    parser.add_argument(
         "--device",
         type=str,
         choices=("auto", "cpu", "cuda", "mps"),
@@ -542,8 +575,16 @@ def main():
         _set_runtime_device(args.device)
 
     selected_envs = tuple(args.envs) if args.envs is not None else None
+    resume_path = None
+    if args.resume_from is not None:
+        resume_path = Path(args.resume_from).expanduser().resolve()
+        if not resume_path.exists():
+            raise FileNotFoundError(f"Checkpoint not found: {resume_path}")
 
-    _, csv_path, plot_path = run_benchmark(env_names=selected_envs)
+    _, csv_path, plot_path = run_benchmark(
+        env_names=selected_envs,
+        resume_from=resume_path,
+    )
     print(f"Saved benchmark table to {csv_path}")
     print(f"Saved benchmark plot to {plot_path}")
 
