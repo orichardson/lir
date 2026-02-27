@@ -1,17 +1,20 @@
-# param_cpd.py
 from __future__ import annotations
-from typing import Dict
+from typing import Dict, Optional, Callable, Tuple, Union, List
 import torch
-from pdg.dist import ParamCPD
-from pdg.alg.torch_opt import opt_joint, torch_score
 import numpy as np
 import networkx as nx
+
+from pdg.dist import ParamCPD
+from pdg.alg.torch_opt import opt_joint, torch_score
 from pdg.pdg import PDG
 from pdg.dist import RawJointDist as RJD
 
+# ⬇️ import your new Optimizer (adjust path if needed)
+from optimizer import Optimizer
+
 
 def _collect_learnables(pdg) -> Dict[str, ParamCPD]:
-    out = {}
+    out: Dict[str, ParamCPD] = {}
     for l, P in pdg.edges("l,P"):
         if isinstance(P, ParamCPD) and P.logits.requires_grad:
             if l in out:
@@ -21,7 +24,7 @@ def _collect_learnables(pdg) -> Dict[str, ParamCPD]:
 
 
 @torch.no_grad()
-def _detach_mu(mu):
+def _detach_mu(mu: torch.Tensor) -> torch.Tensor:
     mu.data = mu.data.detach().clone()
     return mu
 
@@ -41,27 +44,24 @@ def apply_attn_mask(M, attn_mask_beta=None, attn_mask_alpha=None,
         - `edge_spec` may be any format accepted by `PDG._get_edgekey`.
         - If both α and β scale to 0 for an edge, the edge is removed.
     """
-    attn_mask_beta  = attn_mask_beta  or {}
+    attn_mask_beta = attn_mask_beta or {}
     attn_mask_alpha = attn_mask_alpha or {}
 
     M2 = M.copy()
-
-    # operate on the union of all referenced specs
     all_specs = set(attn_mask_beta) | set(attn_mask_alpha)
     for spec in all_specs:
-        edgekey = M2._get_edgekey(spec)            # (src, tgt, label)
+        edgekey = M2._get_edgekey(spec)
         ed = M2.edgedata[edgekey]
 
-        b = attn_mask_beta.get(spec,  beta_default)
+        b = attn_mask_beta.get(spec, beta_default)
         a = attn_mask_alpha.get(spec, alpha_default)
 
         if b == 0 and a == 0:
-            del M2[edgekey]                        # remove edge cleanly
+            del M2[edgekey]
             continue
 
-        # ensure fields exist, then scale
-        ed['beta']  = ed.get('beta',  1.0) * b
-        ed['alpha'] = ed.get('alpha', 1.0) * a
+        ed["beta"] = ed.get("beta", 1.0) * b
+        ed["alpha"] = ed.get("alpha", 1.0) * a
 
     return M2
 
@@ -91,17 +91,14 @@ def pdg_prune_isolated_vars(M: PDG, keep_unit: bool = True) -> PDG:
         if keep_unit and vn == "1":
             continue
         if M2.graph.degree(vn) == 0:
-            # This removes the node from both `vars` and `graph` via PDG.__delitem__
             del M2[vn]
     return M2
 
 
-def pdg_cleanup(
-    M: PDG,
-    drop_zero_weight_edges: bool = False,
-    zero_tol: float = 0.0,
-    keep_unit: bool = True,
-) -> PDG:
+def pdg_cleanup(M: PDG,
+                drop_zero_weight_edges: bool = False,
+                zero_tol: float = 0.0,
+                keep_unit: bool = True) -> PDG:
     """
     Clean up a PDG after masking/removal of edges.
 
@@ -125,8 +122,8 @@ def pdg_cleanup(
 
     if drop_zero_weight_edges:
         for (xn, yn, l), ed in list(M2.edgedata.items()):
-            a = ed.get('alpha', 1.0)
-            b = ed.get('beta', 1.0)
+            a = ed.get("alpha", 1.0)
+            b = ed.get("beta", 1.0)
             if abs(a) <= zero_tol and abs(b) <= zero_tol:
                 del M2[(xn, yn, l)]
 
@@ -189,18 +186,16 @@ def _combine_independent_rdjs(rdjs: list[RJD]) -> RJD:
     return RJD(data, varlist)
 
 
-def decompose_and_infer(
-    M: PDG,
-    inference_fn,
-    *,
-    decompose: bool = True,
-    combine_result: bool = False,
-    cleanup: bool = True,
-    drop_zero_weight_edges: bool = False,
-    zero_tol: float = 0.0,
-    keep_unit: bool = True,
-    inference_kwargs: dict | None = None,
-):
+def decompose_and_infer(M: PDG,
+                        inference_fn,
+                        *,
+                        decompose: bool = True,
+                        combine_result: bool = False,
+                        cleanup: bool = True,
+                        drop_zero_weight_edges: bool = False,
+                        zero_tol: float = 0.0,
+                        keep_unit: bool = True,
+                        inference_kwargs: dict | None = None):
     """
     Optionally clean up and decompose a PDG, run an inference routine per component, and
     optionally combine the independent results.
@@ -233,7 +228,6 @@ def decompose_and_infer(
         ValueError: If `combine_result=True` but `inference_fn` does not return `RJD`.
     """
     inference_kwargs = inference_kwargs or {}
-
     M2 = pdg_cleanup(
         M,
         drop_zero_weight_edges=drop_zero_weight_edges if cleanup else False,
@@ -257,9 +251,54 @@ def decompose_and_infer(
 
     return results
 
+
+# ----------------------------------------------------------------------
+# Utility: construct per-parameter LR from control_mask
+# ----------------------------------------------------------------------
+def make_param_lrs(*,
+                   M,
+                   learnables: Dict[str, ParamCPD],
+                   lr: float,
+                   control_mask: Optional[Dict] = None,
+                   tol: float = 0.0) -> Union[float, List[float]]:
+    """
+    Build learning rates for each ParamCPD parameter tensor.
+
+    Returns:
+        - float if all LR equal (within tol),
+        - otherwise list of per-param LRs aligned with learnables.values().
+    """
+    control_mask = control_mask or {}
+    control_by_label: Dict[str, float] = {}
+    for spec, ctrl in control_mask.items():
+        try:
+            label = M._get_edgekey(spec)[2]
+        except Exception:
+            continue
+        control_by_label[label] = float(ctrl)
+
+    labels: List[str] = list(learnables.keys())
+    per_param: List[float] = [lr * float(control_by_label.get(lbl, 1.0)) for lbl in labels]
+
+    if len(per_param) == 0:
+        return float(lr)
+
+    if tol > 0.0:
+        ref = per_param[0]
+        if all(abs(v - ref) <= tol for v in per_param[1:]):
+            return float(ref)
+    else:
+        if all(v == per_param[0] for v in per_param[1:]):
+            return float(per_param[0])
+
+    return per_param
+
+
+# ----------------------------------------------------------------------
+# LIR core
+# ----------------------------------------------------------------------
 def lir_step(
     M,                             # PDG containing ParamCPDs (learnable θ)
-    optimizer,                     # torch optimizer over θ (created once by caller)
     gamma: float = 0.0,            # LIR γ (inner problem)
     outer_iters: int = 200,        # θ-update iterations within this step
     inner_iters: int = 300,        # μ*-solve iterations (opt_joint)
@@ -269,8 +308,23 @@ def lir_step(
     alpha_default: float = 1.0,    # default α scale for unspecified edges
     beta_default: float = 1.0,     # default β scale for unspecified edges
     control_mask = None,           # edge_spec → gradient scale
-    **inner_kwargs                 # extra kwargs for opt_joint
-):
+    # optimizer config
+    lr: float = 1e-2,
+    outer_backend: str = "standard",
+    standard_type: Optional[str] = "adam",
+    standard_kwargs: Optional[dict] = None,
+    standard_instance: Optional[torch.optim.Optimizer] = None,
+    ode_solve_mode: str = "adaptive",
+    ode_method: str = "dopri5",
+    ode_fixed_method: str = "rk4",
+    atol: float = 1e-4,
+    rtol: float = 1e-6,
+    max_num_steps: Optional[int] = None,
+    n_steps: Optional[int] = None,
+    grad_clip_norm: Optional[float] = 5.0,
+    preconditioner: Optional[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = None,
+    **inner_kwargs
+) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Perform one LIR step:
       repeat `outer_iters` times:
@@ -283,17 +337,39 @@ def lir_step(
     attn_mask_alpha = attn_mask_alpha or {}
     attn_mask_beta = attn_mask_beta or {}
 
-    learnables = _collect_learnables(M)  # map: label -> ParamCPD
+    learnables = _collect_learnables(M)
     if not learnables:
         raise ValueError("No ParamCPDs found in PDG M. Nothing to learn.")
 
     # Apply attention mask once per θ-iteration block (masks may be static within lir_step)
-    M2 = apply_attn_mask(
-        M=M,
-        attn_mask_beta=attn_mask_beta,
-        attn_mask_alpha=attn_mask_alpha,
-        beta_default=beta_default,
-        alpha_default=alpha_default
+    M2 = apply_attn_mask(M,
+                         attn_mask_beta=attn_mask_beta,
+                         attn_mask_alpha=attn_mask_alpha,
+                         beta_default=beta_default,
+                         alpha_default=alpha_default)
+
+    # Build LR list or scalar
+    param_lrs = make_param_lrs(M=M, learnables=learnables, lr=lr, control_mask=control_mask)
+
+    params = [P.logits for P in learnables.values()]
+    opt = Optimizer(
+        params=params,
+        backend=outer_backend,
+        lr=param_lrs,
+        grad_clip_norm=grad_clip_norm,
+        preconditioner=preconditioner,
+        # ODE
+        ode_solve_mode=ode_solve_mode,
+        ode_method=ode_method,
+        ode_fixed_method=ode_fixed_method,
+        atol=atol,
+        rtol=rtol,
+        max_num_steps=max_num_steps,
+        n_steps=n_steps,
+        # Standard
+        standard_type=standard_type if standard_instance is None else None,
+        standard_kwargs=standard_kwargs or {},
+        standard_instance=standard_instance,
     )
 
     last_loss = None
@@ -301,29 +377,21 @@ def lir_step(
 
         def warm_start_init(shape, dtype=torch.double):
             if mu_init is not None:
-                return mu_init.data.clone().to(dtype)
+                return mu_init.data.clone().to(dtype=dtype)
             else:
-                return torch.ones(shape, dtype=dtype)
+                return torch.ones(size=shape, dtype=dtype)
 
-        # inner solve for μ*, given current θ
-        μ_star = opt_joint(M2, gamma=gamma, iters=inner_iters, verbose=False, init=warm_start_init, **inner_kwargs)
-        μ_star = _detach_mu(μ_star)
-        mu_init = μ_star.data.detach().clone()
+        def loss_closure() -> torch.Tensor:
+            nonlocal mu_init
+            # inner solve for μ*, given current θ
+            mu_star = opt_joint(M2, gamma=gamma, iters=inner_iters,
+                                verbose=False, init=warm_start_init, **inner_kwargs)
+            mu_star = _detach_mu(mu_star)
+            mu_init = mu_star.data.detach().clone()
+            return torch_score(M2, mu_star, gamma)
 
-        # outer gradient on θ only
-        optimizer.zero_grad(set_to_none=True)
-        loss = torch_score(M2, μ_star, gamma)
-        loss.backward()
-
-        # apply control mask to gradients
-        for spec, ctrl in control_mask.items():
-            l = M._get_edgekey(spec)[2]  # edge label
-            P = learnables.get(l)
-            if P is not None and P.logits.grad is not None:
-                P.logits.grad *= ctrl
-
-        optimizer.step()
-        last_loss = loss
+        loss_val = opt.step(loss_closure=loss_closure)
+        last_loss = torch.as_tensor(loss_val, dtype=torch.float64)
 
     return mu_init, last_loss
 
@@ -335,37 +403,42 @@ def lir_train(
     inner_iters: int = 300,               # μ*-solve iterations (opt_joint)
     gamma: float = 0.0,                   # LIR γ (inner problem)
     lr: float = 1e-2,                     # θ learning rate
-    optimizer_ctor = torch.optim.Adam,    # optimizer constructor for θ-update
-    opt_kwargs = None,                    # kwargs for optimizer_ctor
     verbose: bool = False,                # print progress
     mu_init = None,                       # warm-start μ for first step
     refocus = None,                       # function M,t -> (attn_mask_alpha, attn_mask_beta, control_mask)
-    **inner_kwargs                        # forwarded to opt_joint
+    outer_backend: str = "standard",
+    standard_type: Optional[str] = "adam",
+    standard_kwargs: Optional[dict] = None,
+    standard_instance: Optional[torch.optim.Optimizer] = None,
+    ode_solve_mode: str = "adaptive",
+    ode_method: str = "dopri5",
+    ode_fixed_method: str = "rk4",
+    atol: float = 1e-4,
+    rtol: float = 1e-6,
+    max_num_steps: Optional[int] = None,
+    n_steps: Optional[int] = None,
+    grad_clip_norm: Optional[float] = 5.0,
+    preconditioner: Optional[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = None,
+    **inner_kwargs
 ):
     """
     LIR training loop: calls `refocus` to get (attn_mask_alpha, attn_mask_beta, control_mask),
     then performs a `lir_step`. Parameters θ are updated in-place.
     """
-    opt_kwargs = opt_kwargs or {}
-
     learnables = _collect_learnables(M)
     if not learnables:
         raise ValueError("No ParamCPDs found in PDG M. Nothing to learn.")
 
-    # Create optimizer
-    opt = optimizer_ctor([P.logits for P in learnables.values()], lr=lr / outer_iters, **opt_kwargs)
-
     last = None
     for t in range(T):
-        # Obtain masks/control for this step
         if refocus is None:
             attn_a, attn_b, ctrl = {}, {}, {}
         else:
             attn_a, attn_b, ctrl = refocus(M, t)
 
+        step_lr = lr / float(outer_iters)
         mu_init, loss = lir_step(
-            M=M,
-            optimizer=opt,
+            M,
             gamma=gamma,
             outer_iters=outer_iters,
             inner_iters=inner_iters,
@@ -373,6 +446,20 @@ def lir_train(
             attn_mask_alpha=attn_a,
             attn_mask_beta=attn_b,
             control_mask=ctrl,
+            lr=step_lr,
+            outer_backend=outer_backend,
+            standard_type=standard_type,
+            standard_kwargs=standard_kwargs,
+            standard_instance=standard_instance,
+            ode_solve_mode=ode_solve_mode,
+            ode_method=ode_method,
+            ode_fixed_method=ode_fixed_method,
+            atol=atol,
+            rtol=rtol,
+            max_num_steps=max_num_steps,
+            n_steps=n_steps,
+            grad_clip_norm=grad_clip_norm,
+            preconditioner=preconditioner,
             **inner_kwargs
         )
 
@@ -382,4 +469,4 @@ def lir_train(
             print(f"[LIR {t:4d}/{T}]  γ={gamma:.3g}  loss={val:.6e}{delta}")
             last = val
 
-    return M  # parameters are updated in-place
+    return M
