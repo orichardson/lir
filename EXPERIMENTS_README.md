@@ -17,6 +17,7 @@ This repository contains the essential files to reproduce the attention strategy
 │   ├── lir__simpler.py                       # LIR training implementation
 │   ├── run_strategies_on_pdgs.py            # Main experiment script
 │   ├── create_individual_panels.py           # Generate individual panel figures
+│   ├── create_distortion_panels.py           # Generate distortion analysis panels
 │   ├── comprehensive_pdg_report.py           # Generate comprehensive PDG report
 │   └── inspect_pdg_structures.py             # Inspect PDG structures in detail
 │
@@ -24,7 +25,8 @@ This repository contains the essential files to reproduce the attention strategy
     ├── panel_1_initial_vs_final.{png,pdf}
     ├── panel_2_average_resolution.{png,pdf}
     ├── panel_3_heatmap.{png,pdf}
-    └── panel_4_{chain_*}.{png,pdf}           # Individual PDG results
+    ├── panel_4_{chain_*}.{png,pdf}           # Individual PDG results
+    └── distortion_panel_{1,2,3}.{png,pdf}   # Distortion analysis panels
 ```
 
 ## 🚀 Quick Start
@@ -50,6 +52,12 @@ python src/create_individual_panels.py
 ```
 **Output**: `individual_panels/` directory with 14 files
 
+#### Create distortion analysis panels (PNG + PDF):
+```bash
+python src/create_distortion_panels.py
+```
+**Output**: 6 additional files in `individual_panels/` (3 panels comparing distortion across all PDGs)
+
 #### Generate comprehensive PDG analysis report:
 ```bash
 python src/comprehensive_pdg_report.py
@@ -70,14 +78,14 @@ python src/inspect_pdg_structures.py
 - **chain_7v_6e**: 7 variables, 6 edges (lowest initial inconsistency: 0.0503)
 
 ### Attention Strategies
-1. **Global** (β=1 for all edges): Optimizes all edges simultaneously
-2. **Local** (β=1 for half edges): Focuses on subset of edges
-3. **Node-based** (β=1 for edges connected to focus node): Local neighborhood optimization
+1. **Uniform** (β=1 for all edges): Optimizes all edges simultaneously
+2. **Partial** (β=1 for half edges): Focuses on subset of edges
+3. **Hub** (β=1 for edges connected to focus node, β=0.1 otherwise): Local neighborhood optimization
 
 ### Key Results
-- **Node-based**: 78.2% average resolution (best)
-- **Global**: 78.0% average resolution
-- **Local**: 43.8% average resolution (struggles on small PDGs)
+- **Hub**: 78.2% average resolution (best)
+- **Uniform**: 78.0% average resolution
+- **Partial**: 43.8% average resolution (struggles on small PDGs)
 
 ## 📈 Output Files
 
@@ -97,6 +105,9 @@ All panels available in both PNG (300 DPI) and PDF formats:
 - `panel_4_chain_5v_4e`: Individual results for chain_5v_4e
 - `panel_4_chain_6v_5e`: Individual results for chain_6v_5e
 - `panel_4_chain_7v_6e`: Individual results for chain_7v_6e
+- `distortion_panel_1_average`: Average distortion across PDGs
+- `distortion_panel_2_tradeoff`: Distortion tradeoff analysis
+- `distortion_panel_3_heatmap`: Distortion heatmap across strategies and PDGs
 
 ### Comprehensive Report
 `COMPREHENSIVE_PDG_REPORT.txt` - Detailed analysis including:
@@ -119,9 +130,9 @@ Where:
 - β = Attention weight for each edge
 
 ### Why Different Strategies Perform Differently
-1. **Small PDGs** (chain_4v_3e): Local strategy fails (8.5%) due to tight coupling
+1. **Small PDGs** (chain_4v_3e): Partial strategy fails (8.5%) due to tight coupling
 2. **Large PDGs** (chain_7v_6e): All strategies succeed (>85%) due to flexibility
-3. **Node-based** slightly outperforms global by focusing computational resources
+3. **Hub** slightly outperforms uniform by focusing computational resources
 
 ## 📝 Notes
 
