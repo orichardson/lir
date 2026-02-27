@@ -128,8 +128,8 @@ Where:
 - All experiments use γ=0.0 (no entropy regularization)
 - Training: 20 time steps, 10 outer iterations, 20 inner iterations
 - Learning rate: 0.05
-- Random seed: 42 (for reproducibility)
-- PDG generation seeds: 104, 105, 106, 107 (for chain_4v_3e through chain_7v_6e)
+- PDG generation uses fixed seeds 104, 105, 106, 107 (for chain_4v_3e through chain_7v_6e)
+- Training scripts currently rely on the global random generator without a fixed per-run seed, so exact reproducibility of training runs is not guaranteed.
 
 ## 🛠️ Customization
 
