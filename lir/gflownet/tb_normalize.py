@@ -126,9 +126,8 @@ def _build_env(reward_fn_str: str) -> ModifiedHyperGrid:
         calculate_partition=True,
         store_all_states=True,
         check_action_validity=True,
-        validate_modes=True,
-        mode_stats="exact",
-        mode_stats_samples=20000,
+        validate_modes=False,
+        mode_stats="none",
     )
 
 
@@ -419,10 +418,10 @@ class ModifiedTBGFlowNet(TBGFlowNet):
 
         # If the conditions values exist, we pass them to self.logZ
         # (should be a ScalarEstimator or equivalent).
-        if trajectories.conditioning is not None:
+        if trajectories.states.conditions is not None:
             with is_callable_exception_handler("logZ", self.logZ):
                 assert isinstance(self.logZ, ScalarEstimator)
-                logZ = self.logZ(trajectories.conditioning)
+                logZ = self.logZ(trajectories.states.conditions[0])
         else:
             logZ = self.logZ
 

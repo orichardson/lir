@@ -38,7 +38,7 @@ else:
 #   inequalities like r >= thr.
 # - EPS_INDEX_CMP: tolerance for floating-point-to-index boundary calculations,
 #   used when turning fractional bands into integer indices.
-EPS_REWARD_CMP = 1e-12
+EPS_REWARD_CMP = 1e-6
 EPS_INDEX_CMP = 1e-9
 
 
@@ -126,17 +126,20 @@ class ModifiedHyperGrid(HyperGrid):
         self._all_states_tensor = None  # Populated optionally in init.
         self._log_partition = None  # Populated optionally in init.
         self._true_dist = None  # Populated at first request.
-        self.calculate_partition = calculate_partition
         self.store_all_states = store_all_states
 
+        # If we store the all states, the partition function is calculated automatically.
+        self.calculate_partition = calculate_partition or store_all_states
+
         # Pre-computes these values when printing.
+        if self.store_all_states or self.calculate_partition:
+            self._enumerate_all_states_tensor()
+
         if self.store_all_states:
-            self._store_all_states_tensor()
             assert self._all_states_tensor is not None
             print(f"+ Environment has {len(self._all_states_tensor)} states")
-
         if self.calculate_partition:
-            self._calculate_log_partition()
+            assert self._log_partition is not None
             print(f"+ Environment log partition is {self._log_partition}")
 
         if isinstance(device, str):
@@ -148,14 +151,14 @@ class ModifiedHyperGrid(HyperGrid):
 
         state_shape = (self.ndim,)
 
-        # HyperGrid - > DiscreteEnv
+        # HyperGrid -> DiscreteEnv
         DiscreteEnv.__init__(
             self,
             n_actions=n_actions,
             s0=s0,
             state_shape=state_shape,
             sf=sf,
-            check_action_validity=check_action_validity,
+            debug=check_action_validity,
         )
         self.States: type[DiscreteStates] = self.States  # for type checking
 
