@@ -39,15 +39,15 @@ RESULTS_DIR = ROOT_DIR / "gflownet" / "gflownet" / "results"
 CONFIG = {
     "device": "auto",
     "height": 16,
-    "ndim": 2,
+    "ndim": 4,
     "uniform_pb": False,
     "lr": 1e-3,
     "lr_logz": 1e-3,
-    "n_iterations": 100,
-    "batch_size": 32,
+    "n_iterations": 20000,
+    "batch_size": 128,
     "epsilon": 0.0,
-    "validation_interval": 25,
-    "validation_samples": 2048,
+    "validation_interval": 200,
+    "validation_samples": 20000,
     "grad_clip_max_norm": 1.0,
     "n_seeds": 5,
     "show_progress": False,
@@ -106,6 +106,9 @@ def _set_runtime_device(preference: str) -> None:
     CONFIG["device"] = resolved
     global DEVICE
     DEVICE = torch.device(resolved)
+
+
+_set_runtime_device(CONFIG["device"])
 
 
 def _maybe_to_device(module: torch.nn.Module | object) -> object:
@@ -243,8 +246,8 @@ def _train_single_run(
         trajectories = gflownet.sample_trajectories(
             env,
             n=CONFIG["batch_size"],
-            save_logprobs=False,
-            save_estimator_outputs=False,
+            save_logprobs=True if CONFIG["epsilon"] == 0 else False,
+            save_estimator_outputs=True if CONFIG["epsilon"] > 0 else False,
             epsilon=CONFIG["epsilon"],
         )
         visited_terminating_states.extend(trajectories.terminating_states)
