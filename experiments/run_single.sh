@@ -4,7 +4,7 @@
 #SBATCH --error=experiments/logs/%x_%j.err
 #SBATCH --time=24:00:00
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
 #SBATCH --partition=main
 #
@@ -21,8 +21,8 @@ set -euo pipefail
 # Uncomment/modify whichever applies to your cluster:
 
 # Option A: conda (default)
-source ~/miniconda3/bin/activate
-conda activate torchgfn
+eval "$(~/miniconda3/bin/conda shell.bash hook)"
+conda activate lir
 
 # Option B: module + conda
 # module load cuda/12.1
@@ -32,7 +32,7 @@ conda activate torchgfn
 # source /path/to/venv/bin/activate
 
 # --- Run ---
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_DIR="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$REPO_DIR"
 mkdir -p experiments/logs
 

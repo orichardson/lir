@@ -205,7 +205,7 @@ def _train_single_run(
     seed: int,
 ) -> list[dict[str, float | int | str]]:
     """Train a single (environment, algorithm, seed) combo and capture metrics."""
-    set_seed(seed)
+    set_seed(seed, performance_mode=True)
     env = _build_env(env_name)
     pf_estimator, pb_estimator = _build_estimators(env)
     gflownet = _instantiate_gflownet(algorithm_name, pf_estimator, pb_estimator)
