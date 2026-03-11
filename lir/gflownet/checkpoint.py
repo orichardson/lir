@@ -59,12 +59,37 @@ class RunState:
 
 
 def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
-    """Serialize JSON to a temporary file then atomically move into place."""
+    """Serialize JSON to a temporary file then atomically move into place.
+
+    Retries the rename a few times to tolerate transient shared-filesystem
+    errors (e.g. NFS/Lustre ESTALE or cross-device rename failures).
+    """
+    import os
+    import time
+
     tmp_path = path.with_suffix(path.suffix + ".tmp")
     path.parent.mkdir(parents=True, exist_ok=True)
     with tmp_path.open("w", encoding="utf-8") as fh:
         json.dump(payload, fh, indent=2, sort_keys=True)
-    tmp_path.replace(path)
+        fh.flush()
+        os.fsync(fh.fileno())
+
+    max_attempts = 5
+    for attempt in range(max_attempts):
+        try:
+            tmp_path.replace(path)
+            return
+        except OSError:
+            if attempt == max_attempts - 1:
+                # Last resort: non-atomic write directly to the target.
+                with path.open("w", encoding="utf-8") as fh:
+                    json.dump(payload, fh, indent=2, sort_keys=True)
+                try:
+                    tmp_path.unlink()
+                except OSError:
+                    pass
+                return
+            time.sleep(0.1 * (2 ** attempt))
 
 
 def _read_json(path: Path) -> dict[str, Any]:

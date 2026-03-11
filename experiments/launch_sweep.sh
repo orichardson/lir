@@ -60,7 +60,15 @@ for algo in "${ALGORITHMS[@]}"; do
         for lr in "${LEARNING_RATES[@]}"; do
             for beta2 in "${BETA2_VALUES[@]}"; do
                 for grad_clip in "${GRAD_CLIP_VALUES[@]}"; do
-                    job_name="gfn-${env:0:4}-${algo:0:6}-lr${lr}-b${beta2}-gc${grad_clip}"
+                    # Build short unique algo tag.
+                    case "$algo" in
+                        TBGFlowNet)                              atag="TB" ;;
+                        ModifiedTBGFlowNet)                      atag="ModTB" ;;
+                        LogPartitionVarianceGFlowNet)            atag="LogPV" ;;
+                        ModifiedLogPartitionVarianceGFlowNet)    atag="ModLP" ;;
+                        *)                                       atag="${algo:0:6}" ;;
+                    esac
+                    job_name="gfn-${env:0:4}-${atag}-lr${lr}-b${beta2}-gc${grad_clip}"
 
                     cmd=(
                         sbatch

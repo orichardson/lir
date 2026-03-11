@@ -419,12 +419,12 @@ class ModifiedTBGFlowNet(TBGFlowNet):
             trajectories, recalculate_all_logprobs=recalculate_all_logprobs
         )
 
-        # If the conditions values exist, we pass them to self.logZ
+        # If conditioning values exist, we pass them to self.logZ
         # (should be a ScalarEstimator or equivalent).
-        if trajectories.states.conditions is not None:
+        if trajectories.conditioning is not None:
             with is_callable_exception_handler("logZ", self.logZ):
                 assert isinstance(self.logZ, ScalarEstimator)
-                logZ = self.logZ(trajectories.states.conditions[0])
+                logZ = self.logZ(trajectories.conditioning)
         else:
             logZ = self.logZ
 

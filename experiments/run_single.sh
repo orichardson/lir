@@ -6,7 +6,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
-#SBATCH --partition=main
+#SBATCH --partition=long
 #
 # Run a single (env, algo, hyperparameter) slice of the benchmark.
 # Designed to be called by launch_sweep.sh or directly.
@@ -21,8 +21,13 @@ set -euo pipefail
 # Uncomment/modify whichever applies to your cluster:
 
 # Option A: conda (default)
+# Save positional args — conda's shell hook can misparse them on some nodes.
+_SAVED_ARGS=("$@")
+set --
 eval "$(~/miniconda3/bin/conda shell.bash hook)"
 conda activate lir
+set -- "${_SAVED_ARGS[@]}"
+unset _SAVED_ARGS
 
 # Option B: module + conda
 # module load cuda/12.1
@@ -30,6 +35,9 @@ conda activate lir
 
 # Option C: venv
 # source /path/to/venv/bin/activate
+
+# --- Deterministic CuBLAS (needed when torch.use_deterministic_algorithms is on) ---
+export CUBLAS_WORKSPACE_CONFIG=:4096:8
 
 # --- Run ---
 REPO_DIR="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
