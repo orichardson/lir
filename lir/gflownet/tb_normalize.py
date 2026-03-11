@@ -20,11 +20,57 @@ from gfn.gflownet.trajectory_balance import (
 )
 from gfn.utils.modules import MLP, DiscreteUniform
 from gfn.preprocessors import KHotPreprocessor
-from gfn.utils.training import validate
 from gfn.utils.handlers import (
     is_callable_exception_handler,
     warn_about_recalculating_logprobs,
 )
+
+from gfn.env import DiscreteEnv
+from gfn.states import DiscreteStates
+from gfn.gflownet.base import GFlowNet
+
+
+def validate(
+    env: DiscreteEnv,
+    gflownet: GFlowNet,
+    n_validation_samples: int = 100_000,
+) -> dict[str, float]:
+    """Compute L1 distance between fresh policy samples and the true reward distribution.
+
+    Draws ``n_validation_samples`` fresh trajectories from the current policy
+    (rather than reusing training states) to get an unbiased estimate.
+
+    Fixes two issues in upstream ``gfn.utils.training.validate``:
+      1. Uses ``.sum()`` instead of ``.mean()`` for proper L1 distance.
+      2. Samples fresh from the policy instead of reusing training states.
+    """
+    true_dist = env.true_dist()
+    if not isinstance(true_dist, torch.Tensor):
+        return {}
+
+    true_dist = true_dist.cpu()
+
+    sampled = gflownet.sample_terminating_states(env, n_validation_samples)
+    assert isinstance(sampled, DiscreteStates)
+
+    final_states_dist = env.get_terminating_state_dist(sampled)
+    if final_states_dist.numel() == 0:
+        return {}
+
+    l1_dist = (final_states_dist - true_dist).abs().sum().item()
+
+    validation_info: dict[str, float] = {"l1_dist": l1_dist}
+
+    # Report logZ difference if available.
+    if hasattr(gflownet, "logZ") and isinstance(gflownet.logZ, torch.Tensor):
+        try:
+            true_logZ = env.log_partition()
+            validation_info["logZ_diff"] = abs(gflownet.logZ.item() - true_logZ)
+        except NotImplementedError:
+            pass
+
+    return validation_info
+
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
@@ -47,7 +93,7 @@ CONFIG = {
     "batch_size": 128,
     "epsilon": 0.0,
     "validation_interval": 200,
-    "validation_samples": 20000,
+    "validation_samples": 100_000,
     "grad_clip_max_norm": 1.0,
     "n_seeds": 5,
     "show_progress": False,
@@ -297,11 +343,10 @@ def _train_single_run(
         gflownet.assert_finite_parameters()
 
         if (it + 1) % CONFIG["validation_interval"] == 0:
-            validation_info, _ = validate(
+            validation_info = validate(
                 env,
                 gflownet,
                 CONFIG["validation_samples"],
-                visited_terminating_states,
             )
             current_l1 = validation_info.get("l1_dist", current_l1)
 
@@ -325,6 +370,18 @@ def _train_single_run(
 
         if CONFIG["show_progress"]:
             iterator.set_postfix({"loss": loss.item(), "n_modes": n_modes_found})
+
+    # Always compute a final validation so the last record has a fresh L1.
+    n_iters = CONFIG["n_iterations"]
+    if n_iters % CONFIG["validation_interval"] != 0:
+        validation_info = validate(
+            env,
+            gflownet,
+            CONFIG["validation_samples"],
+        )
+        current_l1 = validation_info.get("l1_dist", current_l1)
+        if records:
+            records[-1]["l1_dist"] = current_l1
 
     return records
 
