@@ -29,9 +29,12 @@ def find_result_csvs(results_dir: Path, completed_only: bool = False):
 
         config = {}
         if config_path.exists():
-            with config_path.open() as f:
-                raw = json.load(f)
-                config = raw.get("config_snapshot", {}).get("config", {})
+            try:
+                with config_path.open() as f:
+                    raw = json.load(f)
+                    config = raw.get("config_snapshot", {}).get("config", {})
+            except json.JSONDecodeError:
+                pass  # corrupted config from filesystem race; skip metadata
 
         if completed_only and checkpoint_path.exists():
             with checkpoint_path.open() as f:

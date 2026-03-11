@@ -7,6 +7,8 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=16G
 #SBATCH --partition=long
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=joseph@viviano.ca
 #
 # Run a single (env, algo, hyperparameter) slice of the benchmark.
 # Designed to be called by launch_sweep.sh or directly.

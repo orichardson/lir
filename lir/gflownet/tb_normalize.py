@@ -44,7 +44,7 @@ def validate(
       1. Uses ``.sum()`` instead of ``.mean()`` for proper L1 distance.
       2. Samples fresh from the policy instead of reusing training states.
     """
-    true_dist = env.true_dist()
+    true_dist = env.true_dist
     if not isinstance(true_dist, torch.Tensor):
         return {}
 
@@ -64,10 +64,11 @@ def validate(
     # Report logZ difference if available.
     if hasattr(gflownet, "logZ") and isinstance(gflownet.logZ, torch.Tensor):
         try:
-            true_logZ = env.log_partition()
+            true_logZ = env.log_partition
+            print("true_logZ: {}".format(true_logZ))
             validation_info["logZ_diff"] = abs(gflownet.logZ.item() - true_logZ)
         except NotImplementedError:
-            pass
+            raise Exception("failed to calculate logz-diff - true={}".format(env.log_partition))
 
     return validation_info
 

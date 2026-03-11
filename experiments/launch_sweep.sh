@@ -3,12 +3,11 @@
 # Launch the full experiment sweep as parallel SLURM jobs.
 #
 # Experiment grid:
-#   4 algorithms x 4 environments x 3 learning rates x 2 beta2 x 2 grad_clip
-#   = 192 jobs, each running 5 seeds internally.
+#   4 algorithms × 4 environments × 2 beta2 × 2 grad_clip
+#   × (4 cosine LRs + 2 linear LRs) = 384 jobs
 #
-# Each job runs one (algo, env, lr, beta2, grad_clip) combination.
-# All results land in experiments/sweep_results/ for easy aggregation.
-# Checkpointing ensures crashed jobs can resume.
+# Each job runs one (algo, env, lr, beta2, grad_clip, schedule) combination
+# with 5 seeds internally. All results land in experiments/sweep_results/.
 #
 # Usage:
 #   bash experiments/launch_sweep.sh            # submit all jobs
@@ -38,9 +37,18 @@ ALGORITHMS=(
     "ModifiedLogPartitionVarianceGFlowNet"
 )
 ENVIRONMENTS=("original" "cosine" "bitwise_xor" "multiplicative_coprime")
-LEARNING_RATES=("1e-3" "3e-4" "1e-4")
 BETA2_VALUES=("0.999" "0.9999")
 GRAD_CLIP_VALUES=("1.0" "0.1")
+
+# Each entry is "lr schedule_flag" where schedule_flag is passed to run_single.sh.
+LR_SCHEDULE_COMBOS=(
+    "1e-3 --cosine-schedule"
+    "3e-4 --cosine-schedule"
+    "1e-4 --cosine-schedule"
+    "1e-5 --cosine-schedule"
+    "1e-4 --no-cosine-schedule"
+    "1e-5 --no-cosine-schedule"
+)
 
 # --- Fixed hyperparameters ---
 N_ITERATIONS=5000
@@ -56,19 +64,27 @@ OUTPUT_DIR="experiments/sweep_results"
 job_count=0
 
 for algo in "${ALGORITHMS[@]}"; do
+    # Short tag for job name.
+    case "$algo" in
+        TBGFlowNet)                              atag="TB" ;;
+        ModifiedTBGFlowNet)                      atag="ModTB" ;;
+        LogPartitionVarianceGFlowNet)            atag="LogPV" ;;
+        ModifiedLogPartitionVarianceGFlowNet)    atag="ModLP" ;;
+        *)                                       atag="${algo:0:6}" ;;
+    esac
+
     for env in "${ENVIRONMENTS[@]}"; do
-        for lr in "${LEARNING_RATES[@]}"; do
-            for beta2 in "${BETA2_VALUES[@]}"; do
-                for grad_clip in "${GRAD_CLIP_VALUES[@]}"; do
-                    # Build short unique algo tag.
-                    case "$algo" in
-                        TBGFlowNet)                              atag="TB" ;;
-                        ModifiedTBGFlowNet)                      atag="ModTB" ;;
-                        LogPartitionVarianceGFlowNet)            atag="LogPV" ;;
-                        ModifiedLogPartitionVarianceGFlowNet)    atag="ModLP" ;;
-                        *)                                       atag="${algo:0:6}" ;;
-                    esac
-                    job_name="gfn-${env:0:4}-${atag}-lr${lr}-b${beta2}-gc${grad_clip}"
+        for beta2 in "${BETA2_VALUES[@]}"; do
+            for grad_clip in "${GRAD_CLIP_VALUES[@]}"; do
+                for lr_sched in "${LR_SCHEDULE_COMBOS[@]}"; do
+                    read -r lr sched_flag <<< "$lr_sched"
+
+                    # Tag linear-schedule jobs with "-lin" suffix.
+                    sched_suffix=""
+                    if [[ "$sched_flag" == "--no-cosine-schedule" ]]; then
+                        sched_suffix="-lin"
+                    fi
+                    job_name="gfn-${env:0:4}-${atag}-lr${lr}-b${beta2}-gc${grad_clip}${sched_suffix}"
 
                     cmd=(
                         sbatch
@@ -89,7 +105,7 @@ for algo in "${ALGORITHMS[@]}"; do
                         --replay-batch-frac "$REPLAY_BATCH_FRAC"
                         --n-seeds "$N_SEEDS"
                         --output-dir "$OUTPUT_DIR"
-                        --cosine-schedule
+                        "$sched_flag"
                         --show-progress
                     )
 
