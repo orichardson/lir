@@ -10,14 +10,20 @@ Usage:
 from argparse import ArgumentParser
 from pathlib import Path
 import json
+import re
 
 import matplotlib.pyplot as plt
 import pandas as pd
+
+_RUN_CSV_RE = re.compile(r"\d{8}_\d{6}_results\.csv")
 
 
 def find_result_csvs(results_dir: Path, completed_only: bool = False):
     """Yield (config_dict, csv_path) for each finished run in results_dir."""
     for csv_path in sorted(results_dir.glob("*_results.csv")):
+        # Only match timestamped run CSVs (skip aggregated_results.csv etc.).
+        if not _RUN_CSV_RE.match(csv_path.name):
+            continue
         # Skip partial results files.
         if "_partial_" in csv_path.name:
             continue
@@ -126,6 +132,49 @@ def plot_sweep(df: pd.DataFrame, output_path: Path) -> None:
     print(f"Saved plot to {output_path}")
 
 
+def _deduplicate(combined: pd.DataFrame) -> pd.DataFrame:
+    """Remove duplicate rows from configs that were run multiple times.
+
+    For each (config, seed, iteration), keeps the row from the run with
+    the most data (rows). Reports duplicates to the user.
+    """
+    hp_cols = ["algorithm", "environment", "lr", "beta2", "grad_clip_max_norm"]
+    available = [c for c in hp_cols if c in combined.columns]
+    if not available:
+        return combined
+
+    dedup_key = available + ["seed"]
+    before = len(combined)
+
+    # Group by config+seed+run, rank runs by row count (most data wins).
+    combined["_rank"] = (
+        combined.groupby(dedup_key + ["run_csv"])["iteration"]
+        .transform("count")
+    )
+    combined = (
+        combined.sort_values("_rank", ascending=False)
+        .drop_duplicates(subset=dedup_key + ["iteration"], keep="first")
+        .drop(columns=["_rank"])
+    )
+    after = len(combined)
+
+    if before != after:
+        n_dupes = before - after
+        dup_runs = (
+            combined.groupby(available)["run_csv"]
+            .nunique()
+            .reset_index(name="n_runs")
+        )
+        dup_runs = dup_runs[dup_runs["n_runs"] > 1]
+        print(f"\nWARNING: Removed {n_dupes} duplicate rows from "
+              f"{len(dup_runs)} configs with multiple runs:")
+        for _, row in dup_runs.iterrows():
+            config_str = ", ".join(f"{c}={row[c]}" for c in available)
+            print(f"  {config_str}: {row['n_runs']} runs")
+
+    return combined
+
+
 def main():
     parser = ArgumentParser(description="Aggregate sweep results.")
     parser.add_argument(
@@ -164,6 +213,7 @@ def main():
         return
 
     combined = pd.concat(frames, ignore_index=True)
+    combined = _deduplicate(combined)
 
     out_csv = Path(args.output) if args.output else results_dir / "aggregated_results.csv"
     combined.to_csv(out_csv, index=False)

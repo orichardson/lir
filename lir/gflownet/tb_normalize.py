@@ -77,7 +77,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.append(str(ROOT_DIR))
 
-from lir.gflownet.checkpoint import append_records, prepare_run_state
+from lir.gflownet.checkpoint import prepare_run_state, write_completed_checkpoint
 from lir.gflownet.hypergrid import ModifiedHyperGrid
 
 RESULTS_DIR = ROOT_DIR / "gflownet" / "gflownet" / "results"
@@ -101,7 +101,8 @@ CONFIG = {
     # New hyperparameters for experiment sweep.
     "optimizer": "adamw",
     "beta2": 0.999,
-    "cosine_schedule": True,
+    "lr_schedule": "linear",  # "cosine", "linear", or "none"
+    "lr_end_factor": 0.01,    # for linear schedule: final_lr = initial_lr * end_factor
     "loss_clamp": 0.0,        # 0 = disabled; positive = clamp per-trajectory loss
     "replay_capacity": 0,     # 0 = disabled; positive = replay buffer size
     "replay_batch_frac": 0.5, # fraction of batch drawn from replay buffer
@@ -252,7 +253,7 @@ def _train_single_run(
     seed: int,
 ) -> list[dict[str, float | int | str]]:
     """Train a single (environment, algorithm, seed) combo and capture metrics."""
-    set_seed(seed, performance_mode=True)
+    set_seed(seed)
     env = _build_env(env_name)
     pf_estimator, pb_estimator = _build_estimators(env)
     gflownet = _instantiate_gflownet(algorithm_name, pf_estimator, pb_estimator)
@@ -265,9 +266,17 @@ def _train_single_run(
         optimizer.add_param_group({"params": logz_params, "lr": CONFIG["lr_logz"]})
 
     scheduler = None
-    if CONFIG["cosine_schedule"]:
+    schedule = str(CONFIG["lr_schedule"]).lower()
+    if schedule == "cosine":
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             optimizer, T_max=CONFIG["n_iterations"]
+        )
+    elif schedule == "linear":
+        scheduler = torch.optim.lr_scheduler.LinearLR(
+            optimizer,
+            start_factor=1.0,
+            end_factor=float(CONFIG["lr_end_factor"]),
+            total_iters=CONFIG["n_iterations"],
         )
 
     replay_buffer = None
@@ -494,13 +503,16 @@ class ModifiedTBGFlowNet(TBGFlowNet):
         # Per-step normalized TB loss.  The raw score
         #   s_i = log P_F(τ_i) − log P_B(τ_i|x_i) − log R(x_i)
         # is a sum over T_i action log-probs, so |s_i| ~ O(T_i).
-        # Dividing by T_i *before* squaring converts to a per-step
-        # average error, making the loss trajectory-length-agnostic:
+        # We square first, then divide by T_i, giving per-step
+        # mean squared error:
         #
-        #   L = (1/n) Σ_i  ((s_i + log Z) / T_i)²
+        #   L = (1/n) Σ_i  (s_i + log Z)² / T_i
         #
+        # Dividing *after* squaring avoids the 1/T² gradient
+        # attenuation that dividing before squaring would cause
+        # (which starves long trajectories of learning signal).
         # Fixed point is unchanged: s_i + log Z = 0  ⟹  loss = 0.
-        scores = ((scores + logZ.squeeze()) / traj_len).pow(2)
+        scores = (scores + logZ.squeeze()).pow(2) / traj_len
 
         loss = loss_reduce(scores, reduction)
         if torch.isnan(loss).any():
@@ -560,13 +572,15 @@ class ModifiedLogPartitionVarianceGFlowNet(LogPartitionVarianceGFlowNet):
         #   s_i = log P_F(τ_i) − log P_B(τ_i|x_i) − log R(x_i)
         # is a sum over T_i action log-probs, so |s_i| ~ O(T_i).
         # We center by the batch mean (as in standard VarGrad), then
-        # divide by T_i *before* squaring to get a per-step average
-        # deviation, making the loss trajectory-length-agnostic:
+        # square and divide by T_i to get a per-step mean squared
+        # deviation:
         #
-        #   L = (1/n) Σ_i  ((s_i − s̄) / T_i)²     where s̄ = (1/n) Σ_j s_j
+        #   L = (1/n) Σ_i  (s_i − s̄)² / T_i     where s̄ = (1/n) Σ_j s_j
         #
+        # Dividing *after* squaring avoids the 1/T² gradient
+        # attenuation that dividing before squaring would cause.
         # Fixed point is unchanged: all s_i equal  ⟹  s_i − s̄ = 0  ⟹  loss = 0.
-        scores = ((scores - scores.mean()) / traj_len).pow(2)
+        scores = (scores - scores.mean()).pow(2) / traj_len
 
         loss = loss_reduce(scores, reduction)
         if torch.isnan(loss).any():
@@ -588,9 +602,8 @@ ALGORITHM_REGISTRY.update(
 def run_benchmark(
     env_names: tuple[str, ...] | list[str] | None = None,
     algo_names: tuple[str, ...] | list[str] | None = None,
-    resume_from: Path | None = None,
 ) -> tuple[pd.DataFrame, Path, Path]:
-    """Execute the benchmark sweep with resume/checkpoint support."""
+    """Execute the benchmark sweep, collecting all results in memory."""
     active_envs = tuple(env_names) if env_names is not None else ENVIRONMENTS
     active_algos = tuple(algo_names) if algo_names is not None else ALGORITHM_ORDER
     if not active_envs:
@@ -598,45 +611,23 @@ def run_benchmark(
     if not active_algos:
         raise ValueError("No algorithms specified for benchmarking.")
 
-    run_state = prepare_run_state(
-        RESULTS_DIR,
-        CONFIG,
-        active_envs,
-        resume_from=resume_from,
+    run_state = prepare_run_state(RESULTS_DIR, CONFIG, active_envs, active_algos)
+    print(
+        f"Starting run '{run_state.run_id}'. "
+        f"Config saved to {run_state.config_path}"
     )
-    if run_state.resumed:
-        print(
-            f"Resuming run '{run_state.run_id}' from {run_state.checkpoint_path}"
-        )
-    else:
-        print(
-            f"Starting run '{run_state.run_id}'. "
-            f"Config saved to {run_state.config_path}"
-        )
 
+    all_records: list[dict] = []
     for env_name in active_envs:
         for algo_name in active_algos:
             for seed in range(7, 7 * CONFIG["n_seeds"] + 1, 7):
-                scenario = (env_name, algo_name, seed)
-                if scenario in run_state.completed:
-                    continue
                 records = _train_single_run(env_name, algo_name, seed)
-                append_records(run_state.partial_csv_path, records)
-                run_state.completed.add(scenario)
-                run_state.persist_checkpoint()
+                all_records.extend(records)
 
-    if not run_state.partial_csv_path.exists():
-        raise RuntimeError("No training records were saved; aborting finalization.")
-
-    results_df = pd.read_csv(run_state.partial_csv_path)
+    results_df = pd.DataFrame(all_records)
     results_df.to_csv(run_state.csv_path, index=False)
-
     _plot_results(results_df, run_state.plot_path)
-    run_state.persist_checkpoint(status="completed")
-    try:
-        run_state.partial_csv_path.unlink()
-    except FileNotFoundError:
-        pass
+    write_completed_checkpoint(run_state)
 
     return results_df, run_state.csv_path, run_state.plot_path
 
@@ -664,15 +655,18 @@ def main():
     parser.add_argument("--n_iterations", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--lr", type=float, default=None)
-    parser.add_argument("--lr-logz", type=float, default=None)
+    parser.add_argument("--lr-logz", type=float, default=None,
+                        help="Absolute logZ learning rate (overrides --lr-logz-multiplier).")
+    parser.add_argument("--lr-logz-multiplier", type=float, default=None,
+                        help="Set logZ lr = lr * multiplier (e.g. 10, 100).")
     parser.add_argument(
         "--optimizer", type=str, choices=("adamw", "adam", "sgd"),
         default=None,
     )
     parser.add_argument("--beta2", type=float, default=None)
-    parser.add_argument("--cosine-schedule", action="store_true", default=None)
-    parser.add_argument("--no-cosine-schedule", dest="cosine_schedule",
-                        action="store_false")
+    parser.add_argument("--lr-schedule", type=str,
+                        choices=("cosine", "linear", "none"), default=None,
+                        help="LR schedule type (default: linear).")
     parser.add_argument("--grad-clip", type=float, default=None,
                         help="Max norm for gradient clipping.")
     parser.add_argument("--loss-clamp", type=float, default=None,
@@ -691,7 +685,6 @@ def main():
                         help="Override results directory.")
     parser.add_argument("--render_results", type=str, default=None,
                         help="Path to existing CSV to render plots (skips training).")
-    parser.add_argument("--resume-from", type=str, default=None)
 
     args = parser.parse_args()
 
@@ -714,7 +707,7 @@ def main():
         "lr_logz": args.lr_logz,
         "optimizer": args.optimizer,
         "beta2": args.beta2,
-        "cosine_schedule": args.cosine_schedule,
+        "lr_schedule": args.lr_schedule,
         "grad_clip_max_norm": args.grad_clip,
         "loss_clamp": args.loss_clamp,
         "replay_capacity": args.replay_capacity,
@@ -726,6 +719,10 @@ def main():
     for key, val in _cli_overrides.items():
         if val is not None:
             CONFIG[key] = val
+
+    # --lr-logz-multiplier sets lr_logz relative to lr (overridden by --lr-logz).
+    if args.lr_logz is None and args.lr_logz_multiplier is not None:
+        CONFIG["lr_logz"] = CONFIG["lr"] * args.lr_logz_multiplier
     CONFIG["show_progress"] = args.show_progress
     if args.device is not None:
         _set_runtime_device(args.device)
@@ -735,16 +732,10 @@ def main():
 
     selected_envs = tuple(args.envs) if args.envs is not None else None
     selected_algos = tuple(args.algos) if args.algos is not None else None
-    resume_path = None
-    if args.resume_from is not None:
-        resume_path = Path(args.resume_from).expanduser().resolve()
-        if not resume_path.exists():
-            raise FileNotFoundError(f"Checkpoint not found: {resume_path}")
 
     _, csv_path, plot_path = run_benchmark(
         env_names=selected_envs,
         algo_names=selected_algos,
-        resume_from=resume_path,
     )
     print(f"Saved benchmark table to {csv_path}")
     print(f"Saved benchmark plot to {plot_path}")
