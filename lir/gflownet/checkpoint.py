@@ -70,12 +70,15 @@ def build_effective_config(
     algo_names: tuple[str, ...],
 ) -> dict[str, Any]:
     """Snapshot the configuration that uniquely identifies a benchmark run."""
-    return {
+    snapshot: dict[str, Any] = {
         "config": copy.deepcopy(base_config),
         "envs": list(env_names),
         "algos": list(algo_names),
         "created_at": datetime.now().isoformat(),
     }
+    if algo_names:
+        snapshot["algos"] = list(algo_names)
+    return snapshot
 
 
 def _config_hash(snapshot: dict[str, Any]) -> str:

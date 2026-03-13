@@ -286,8 +286,16 @@ def _train_single_run(
 
     loss_clamp = float(CONFIG["loss_clamp"])
 
+    # Precompute the full set of mode states for precise coverage tracking.
+    all_states = env.all_states
+    mode_mask = env.mode_mask(all_states)
+    all_mode_states: set[tuple[int, ...]] = {
+        tuple(s.tolist()) for s in all_states.tensor[mode_mask]
+    }
+    total_mode_states = len(all_mode_states)
+
     visited_terminating_states = env.states_from_batch_shape((0,))
-    discovered_modes: set[int] = set()
+    discovered_mode_states: set[tuple[int, ...]] = set()
     current_l1 = float("inf")
     records: list[dict[str, float | int | str]] = []
 
@@ -360,9 +368,13 @@ def _train_single_run(
             )
             current_l1 = validation_info.get("l1_dist", current_l1)
 
-        modes_found = env.modes_found(visited_terminating_states)
-        discovered_modes.update(modes_found)
-        n_modes_found = len(discovered_modes)
+        # Track unique mode states discovered so far.
+        new_terms = trajectories.terminating_states.tensor
+        for s in new_terms:
+            key = tuple(s.tolist())
+            if key in all_mode_states:
+                discovered_mode_states.add(key)
+        mode_coverage = len(discovered_mode_states) / total_mode_states if total_mode_states > 0 else 0.0
         n_terminating_states = len(visited_terminating_states)
 
         records.append(
@@ -373,13 +385,15 @@ def _train_single_run(
                 "iteration": it + 1,
                 "loss": loss.item(),
                 "l1_dist": current_l1,
-                "n_modes_found": n_modes_found,
+                "mode_coverage": mode_coverage,
+                "n_mode_states_found": len(discovered_mode_states),
+                "total_mode_states": total_mode_states,
                 "n_terminating_states": n_terminating_states,
             }
         )
 
         if CONFIG["show_progress"]:
-            iterator.set_postfix({"loss": loss.item(), "n_modes": n_modes_found})
+            iterator.set_postfix({"loss": loss.item(), "cov": f"{mode_coverage:.1%}"})
 
     # Always compute a final validation so the last record has a fresh L1.
     n_iters = CONFIG["n_iterations"]
@@ -401,7 +415,7 @@ def _plot_results(results_df: pd.DataFrame, output_path: Path) -> None:
     metrics = [
         ("loss", "Loss"),
         ("l1_dist", "L1 distance"),
-        ("n_modes_found", "Modes found"),
+        ("mode_coverage", "Mode coverage"),
     ]
     envs = list(ENVIRONMENTS)
     fig, axes = plt.subplots(

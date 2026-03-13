@@ -64,7 +64,7 @@ def augment_df(df: pd.DataFrame, config: dict) -> pd.DataFrame:
 
 def plot_sweep(df: pd.DataFrame, output_path: Path) -> None:
     """Plot loss and L1 distance for each (algorithm, environment), best HP per algo."""
-    metrics = [("loss", "Loss"), ("l1_dist", "L1 Distance")]
+    metrics = [("loss", "Loss"), ("l1_dist", "L1 Distance"), ("mode_coverage", "Mode Coverage")]
     envs = sorted(df["environment"].unique())
     algos = sorted(df["algorithm"].unique())
 
@@ -229,7 +229,7 @@ def main():
             .agg(
                 final_l1=("l1_dist", "last"),
                 final_loss=("loss", "last"),
-                max_modes=("n_modes_found", "max"),
+                final_mode_coverage=("mode_coverage", "last"),
                 n_rows=("iteration", "count"),
             )
             .sort_values("final_l1")
