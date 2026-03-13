@@ -53,9 +53,10 @@ def find_result_csvs(results_dir: Path, completed_only: bool = False):
 
 def augment_df(df: pd.DataFrame, config: dict) -> pd.DataFrame:
     """Add hyperparameter columns from the config to the dataframe."""
-    for key in ("lr", "beta2", "grad_clip_max_norm", "optimizer",
+    for key in ("lr", "lr_logz", "lr_logz_multiplier", "beta2",
+                "grad_clip_max_norm", "optimizer", "lr_schedule",
                 "loss_clamp", "replay_capacity", "replay_batch_frac",
-                "cosine_schedule", "batch_size", "height", "ndim"):
+                "batch_size", "height", "ndim"):
         if key in config:
             df[key] = config[key]
     return df

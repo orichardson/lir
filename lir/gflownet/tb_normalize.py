@@ -722,6 +722,7 @@ def main():
 
     # --lr-logz-multiplier sets lr_logz relative to lr (overridden by --lr-logz).
     if args.lr_logz is None and args.lr_logz_multiplier is not None:
+        CONFIG["lr_logz_multiplier"] = args.lr_logz_multiplier
         CONFIG["lr_logz"] = CONFIG["lr"] * args.lr_logz_multiplier
     CONFIG["show_progress"] = args.show_progress
     if args.device is not None:
