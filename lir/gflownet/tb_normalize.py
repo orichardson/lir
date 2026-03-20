@@ -30,15 +30,36 @@ from gfn.states import DiscreteStates
 from gfn.gflownet.base import GFlowNet
 
 
+def _jsd(p: torch.Tensor, q: torch.Tensor, eps: float = 1e-12) -> float:
+    """Compute Jensen-Shannon divergence between two discrete distributions.
+
+    Args:
+        p: First distribution (1-D, sums to 1).
+        q: Second distribution (1-D, sums to 1).
+        eps: Small constant to avoid log(0).
+
+    Returns:
+        JSD in nats (base-e).  Bounded in [0, ln2].
+    """
+    p = p.clamp(min=eps)
+    q = q.clamp(min=eps)
+    m = 0.5 * (p + q)
+    kl_pm = (p * (p / m).log()).sum()
+    kl_qm = (q * (q / m).log()).sum()
+    return (0.5 * (kl_pm + kl_qm)).item()
+
+
 def validate(
     env: DiscreteEnv,
     gflownet: GFlowNet,
     n_validation_samples: int = 100_000,
+    sample_chunk_size: int = 1_000_000,
 ) -> dict[str, float]:
-    """Compute L1 distance between fresh policy samples and the true reward distribution.
+    """Compute L1 distance and JSD between fresh policy samples and the true reward distribution.
 
     Draws ``n_validation_samples`` fresh trajectories from the current policy
     (rather than reusing training states) to get an unbiased estimate.
+    Samples are drawn in chunks of ``sample_chunk_size`` to avoid OOM.
 
     Fixes two issues in upstream ``gfn.utils.training.validate``:
       1. Uses ``.sum()`` instead of ``.mean()`` for proper L1 distance.
@@ -50,16 +71,26 @@ def validate(
 
     true_dist = true_dist.cpu()
 
-    sampled = gflownet.sample_terminating_states(env, n_validation_samples)
-    assert isinstance(sampled, DiscreteStates)
+    # Sample in chunks to avoid OOM for large n_validation_samples.
+    counts = torch.zeros(env.n_terminating_states, dtype=torch.long)
+    remaining = n_validation_samples
+    while remaining > 0:
+        chunk_n = min(remaining, sample_chunk_size)
+        sampled = gflownet.sample_terminating_states(env, chunk_n)
+        assert isinstance(sampled, DiscreteStates)
+        indices = env.get_terminating_states_indices(sampled).cpu()
+        counts.scatter_add_(0, indices.long(), torch.ones_like(indices, dtype=torch.long))
+        remaining -= chunk_n
 
-    final_states_dist = env.get_terminating_state_dist(sampled)
-    if final_states_dist.numel() == 0:
+    total = counts.sum().item()
+    if total == 0:
         return {}
+    final_states_dist = counts.float() / total
 
     l1_dist = (final_states_dist - true_dist).abs().sum().item()
+    jsd = _jsd(final_states_dist, true_dist)
 
-    validation_info: dict[str, float] = {"l1_dist": l1_dist}
+    validation_info: dict[str, float] = {"l1_dist": l1_dist, "jsd": jsd}
 
     # Report logZ difference if available.
     if hasattr(gflownet, "logZ") and isinstance(gflownet.logZ, torch.Tensor):
@@ -94,7 +125,7 @@ CONFIG = {
     "batch_size": 128,
     "epsilon": 0.0,
     "validation_interval": 200,
-    "validation_samples": 100_000,
+    "validation_samples": 1_000_000,
     "grad_clip_max_norm": 1.0,
     "n_seeds": 5,
     "show_progress": False,
@@ -106,6 +137,7 @@ CONFIG = {
     "loss_clamp": 0.0,        # 0 = disabled; positive = clamp per-trajectory loss
     "replay_capacity": 0,     # 0 = disabled; positive = replay buffer size
     "replay_batch_frac": 0.5, # fraction of batch drawn from replay buffer
+    "final_validation_samples": 10_000_000,  # high-quality JSD at end of training
 }
 ENVIRONMENTS = (
     "original",
@@ -297,6 +329,7 @@ def _train_single_run(
     visited_terminating_states = env.states_from_batch_shape((0,))
     discovered_mode_states: set[tuple[int, ...]] = set()
     current_l1 = float("inf")
+    current_jsd = float("inf")
     records: list[dict[str, float | int | str]] = []
 
     iterator = tqdm(
@@ -367,6 +400,7 @@ def _train_single_run(
                 CONFIG["validation_samples"],
             )
             current_l1 = validation_info.get("l1_dist", current_l1)
+            current_jsd = validation_info.get("jsd", current_jsd)
 
         # Track unique mode states discovered so far.
         new_terms = trajectories.terminating_states.tensor
@@ -384,7 +418,9 @@ def _train_single_run(
                 "seed": seed,
                 "iteration": it + 1,
                 "loss": loss.item(),
+                "loss_unnormalized": getattr(gflownet, '_unnormalized_loss', None),
                 "l1_dist": current_l1,
+                "jsd": current_jsd,
                 "mode_coverage": mode_coverage,
                 "n_mode_states_found": len(discovered_mode_states),
                 "total_mode_states": total_mode_states,
@@ -395,7 +431,7 @@ def _train_single_run(
         if CONFIG["show_progress"]:
             iterator.set_postfix({"loss": loss.item(), "cov": f"{mode_coverage:.1%}"})
 
-    # Always compute a final validation so the last record has a fresh L1.
+    # Always compute a final validation so the last record has a fresh L1/JSD.
     n_iters = CONFIG["n_iterations"]
     if n_iters % CONFIG["validation_interval"] != 0:
         validation_info = validate(
@@ -404,8 +440,21 @@ def _train_single_run(
             CONFIG["validation_samples"],
         )
         current_l1 = validation_info.get("l1_dist", current_l1)
+        current_jsd = validation_info.get("jsd", current_jsd)
         if records:
             records[-1]["l1_dist"] = current_l1
+            records[-1]["jsd"] = current_jsd
+
+    # High-quality final JSD with 10M samples for reliable algorithm comparison.
+    # Set final_validation_samples=0 to skip (e.g. during Optuna search).
+    final_samples = int(CONFIG.get("final_validation_samples", 10_000_000))
+    if final_samples > 0:
+        final_info = validate(env, gflownet, final_samples)
+        final_jsd = final_info.get("jsd", current_jsd)
+        final_l1 = final_info.get("l1_dist", current_l1)
+        if records:
+            records[-1]["jsd_final"] = final_jsd
+            records[-1]["l1_dist_final"] = final_l1
 
     return records
 
@@ -415,6 +464,7 @@ def _plot_results(results_df: pd.DataFrame, output_path: Path) -> None:
     metrics = [
         ("loss", "Loss"),
         ("l1_dist", "L1 distance"),
+        ("jsd", "JSD"),
         ("mode_coverage", "Mode coverage"),
     ]
     envs = list(ENVIRONMENTS)
@@ -526,7 +576,9 @@ class ModifiedTBGFlowNet(TBGFlowNet):
         # attenuation that dividing before squaring would cause
         # (which starves long trajectories of learning signal).
         # Fixed point is unchanged: s_i + log Z = 0  ⟹  loss = 0.
-        scores = (scores + logZ.squeeze()).pow(2) / traj_len
+        squared = (scores + logZ.squeeze()).pow(2)
+        self._unnormalized_loss = squared.mean().item()
+        scores = squared / traj_len
 
         loss = loss_reduce(scores, reduction)
         if torch.isnan(loss).any():
@@ -594,7 +646,9 @@ class ModifiedLogPartitionVarianceGFlowNet(LogPartitionVarianceGFlowNet):
         # Dividing *after* squaring avoids the 1/T² gradient
         # attenuation that dividing before squaring would cause.
         # Fixed point is unchanged: all s_i equal  ⟹  s_i − s̄ = 0  ⟹  loss = 0.
-        scores = (scores - scores.mean()).pow(2) / traj_len
+        centered_sq = (scores - scores.mean()).pow(2)
+        self._unnormalized_loss = centered_sq.mean().item()
+        scores = centered_sq / traj_len
 
         loss = loss_reduce(scores, reduction)
         if torch.isnan(loss).any():
@@ -691,6 +745,8 @@ def main():
                         help="Replay buffer capacity (0=disabled).")
     parser.add_argument("--replay-batch-frac", type=float, default=None,
                         help="Fraction of batch drawn from replay buffer.")
+    parser.add_argument("--final-validation-samples", type=int, default=None,
+                        help="Samples for high-quality final JSD (default: 10M).")
 
     # --- Seeds & output ---
     parser.add_argument("--n-seeds", type=int, default=None)
@@ -726,6 +782,7 @@ def main():
         "loss_clamp": args.loss_clamp,
         "replay_capacity": args.replay_capacity,
         "replay_batch_frac": args.replay_batch_frac,
+        "final_validation_samples": args.final_validation_samples,
         "n_seeds": args.n_seeds,
         "height": args.height,
         "ndim": args.ndim,
