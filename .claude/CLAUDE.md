@@ -1,7 +1,3 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project Overview
 
 LIR (Local Inconsistency Resolution) is a research project implementing a generic recipe for deriving machine learning algorithms. The core idea: restrict attention to a small part of beliefs, calculate inconsistency in context via PDGs, and resolve it by updating parameters proportional to control. Built on the theory of Probabilistic Dependency Graphs (PDGs).
