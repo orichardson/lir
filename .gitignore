@@ -1,2 +1,6 @@
 **/__pycache__
 *.ipynb
+.DS_Store
+experiments/sweep_results/
+output2.png
+texput.log
