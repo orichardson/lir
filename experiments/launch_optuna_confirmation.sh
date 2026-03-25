@@ -11,9 +11,6 @@
 # Usage:
 #   bash experiments/launch_optuna_confirmation.sh            # submit all 16 jobs
 #   bash experiments/launch_optuna_confirmation.sh --dry-run  # print commands only
-#
-# After all jobs finish:
-#   python experiments/aggregate_results.py --input-dir experiments/optuna_results/confirm
 
 set -euo pipefail
 
@@ -26,6 +23,12 @@ if [[ "${1:-}" == "--dry-run" ]]; then
     DRY_RUN=true
 fi
 
+# --- Cluster config (edit for your environment) ---
+PARTITION="long"
+TIME="18:00:00"
+# MAIL_USER="you@example.com"
+
+# --- Experiment grid ---
 ALGORITHMS=(
     "TBGFlowNet"
     "ModifiedTBGFlowNet"
@@ -76,13 +79,13 @@ for algo in "${ALGORITHMS[@]}"; do
             --job-name="$job_name"
             --output="experiments/logs/%x_%j.log"
             --error="experiments/logs/%x_%j.err"
-            --time=18:00:00
+            --time="$TIME"
             --gres=gpu:1
             --cpus-per-task=2
             --mem=16G
-            --partition=long
+            --partition="$PARTITION"
             --mail-type=FAIL
-            --mail-user=joseph@viviano.ca
+            ${MAIL_USER:+--mail-user="$MAIL_USER"}
             experiments/run_optuna.sh
             confirm
             --algo "$algo"
@@ -104,5 +107,3 @@ done
 echo ""
 echo "Launched $job_count confirmation jobs (one per algo x env pair)."
 echo "Results will be written to: experiments/optuna_results/confirm/"
-echo "After all jobs finish, run:"
-echo "  python experiments/aggregate_results.py --input-dir experiments/optuna_results/confirm"

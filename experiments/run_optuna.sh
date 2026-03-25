@@ -6,9 +6,10 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=16G
+# TODO: Set these for your cluster:
 #SBATCH --partition=long
 #SBATCH --mail-type=FAIL
-#SBATCH --mail-user=joseph@viviano.ca
+# #SBATCH --mail-user=you@example.com
 #
 # SLURM wrapper for optuna_sweep.py (search or confirm mode).
 # Activates conda, then forwards all arguments.
@@ -19,10 +20,11 @@
 
 set -euo pipefail
 
-# --- Environment setup (same as run_single.sh) ---
+# --- Environment setup ---
+# TODO: Adjust the conda activation path for your cluster.
 _SAVED_ARGS=("$@")
 set --
-eval "$(~/miniconda3/bin/conda shell.bash hook)"
+eval "$(conda shell.bash hook 2>/dev/null || ~/miniconda3/bin/conda shell.bash hook)"
 conda activate lir
 set -- "${_SAVED_ARGS[@]}"
 unset _SAVED_ARGS
