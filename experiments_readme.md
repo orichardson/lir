@@ -87,7 +87,7 @@ python src/inspect_pdg_structures.py
 ## Output Files
 
 ### Main Visualization
-`strategy_resolution_visualization.png` - Comprehensive 6-panel visualization showing:
+`strategy_resolution_visualization.png` 
 1. Initial vs final inconsistency comparison
 2. Average resolution by strategy
 3. Resolution heatmap (strategy × PDG)
@@ -113,8 +113,6 @@ Where:
 - All experiments use gamma=0.0 (no entropy regularization)
 - Training: 20 time steps, 10 outer iterations, 20 inner iterations
 - Learning rate: 0.05
-- PDG generation uses fixed seeds 104, 105, 106, 107 (for chain_4v_3e through chain_7v_6e)
-- Training scripts currently rely on the global random generator without a fixed per-run seed, so exact reproducibility of training runs is not guaranteed.
 
 ## Customization
 
