@@ -94,11 +94,11 @@ python src/inspect_pdg_structures.py
 4. Individual PDG results (4 panels)
 
 
-## 🔬 Understanding the Results
+## Understanding the Results
 
 ### Inconsistency Computation
 ```
-Inconsistency(μ, PDG) = Σ_edges β × D_KL(μ(Y|X) || CPD(Y|X))
+Inconsistency(mu, PDG) = sum_edges beta × D_KL(mu(Y|X) || CPD(Y|X))
 ```
 
 Where:
