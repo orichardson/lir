@@ -6,27 +6,24 @@ This repository contains the essential files to reproduce the attention strategy
 
 ```
 .
-├── README.md                                  # Main project documentation
-├── environment.yaml                           # Conda environment specification
-├── conftest.py                               # Testing configuration
-├── COMPREHENSIVE_PDG_REPORT.txt              # Detailed PDG analysis report
-├── strategy_resolution_visualization.png     # Main results visualization
+├── README.md                                   # Main project documentation
+├── experiments_readme.md                       # This quick-start guide
+├── environment.yaml                            # Conda environment specification
+├── conftest.py                                 # Testing configuration
+├── COMPREHENSIVE_PDG_REPORT.txt                # Detailed PDG analysis report
+├── results/
+│   └── attention_parallel_4pdg_50cpd_l40s/
+│       ├── pdg*_chain_*/                       # Per-PDG shard outputs (CSVs/checkpoints)
+│       └── figures/                            # Consolidated publication-ready figures
 │
 ├── src/
-│   ├── pdg/                                  # Core PDG library (essential!)
-│   ├── lir__simpler.py                       # LIR training implementation
-│   ├── run_strategies_on_pdgs.py            # Main experiment script
+│   ├── pdg/                                   # Core PDG library (essential!)
+│   ├── lir__simpler.py                        # LIR training implementation
+│   ├── run_strategies_on_pdgs.py              # Main experiment + visualization script
 │   ├── create_individual_panels.py           # Generate individual panel figures
 │   ├── create_distortion_panels.py           # Generate distortion analysis panels
 │   ├── comprehensive_pdg_report.py           # Generate comprehensive PDG report
 │   └── inspect_pdg_structures.py             # Inspect PDG structures in detail
-│
-└── individual_panels/                         # Individual panel outputs (PNG + PDF)
-    ├── panel_1_initial_vs_final.{png,pdf}
-    ├── panel_2_average_resolution.{png,pdf}
-    ├── panel_3_heatmap.{png,pdf}
-    ├── panel_4_{chain_*}.{png,pdf}           # Individual PDG results
-    └── distortion_panel_{1,2,3}.{png,pdf}   # Distortion analysis panels
 ```
 
 ## Quick Start
