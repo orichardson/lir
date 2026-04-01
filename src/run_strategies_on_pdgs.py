@@ -5,6 +5,13 @@ Run global, local, and node-based attention strategies on all PDGs and visualize
 Supports many CPD re-draws for the same graph structure (--n-cpd-replicates): each replicate
 resamples CPDs on a fixed template PDG, then runs uniform / partial / hub. 
 
+
+
+  - fig_tv_theta_lir_process.png — mean cumulative TV of learned CPDs vs initial θ over refocus steps
+  - fig_inconsistency_initial_vs_final.png — initial vs final inconsistency (one point per replicate, by PDG)
+  - fig_inconsistency_initial_vs_final_bars.png — mean initial vs final inconsistency (grouped bars by PDG and strategy; legend upper-left)
+  - strategy_resolution_visualization.png — full dashboard; also split into strategy_resolution_panel_inconsistency.png, _avg_resolution.png, _heatmap.png, _per_pdg_grid.png.
+  
 Use --n-pdgs to scale the number of distinct fixed structures (default 12; was 4 in early runs).
 Each structure k uses num_vars=4+k, num_edges=3+k, RNG seed 104+k (same family as chain_4v_3e...).
 """
@@ -945,6 +952,7 @@ def visualize_initial_vs_final_inconsistency_scatter(results: List[Dict], output
         hi = max(sub["initial"].max(), sub["final"].max())
         if np.isfinite(lo) and np.isfinite(hi) and lo < hi:
             ax.plot([lo, hi], [lo, hi], "k--", alpha=0.35, linewidth=1)
+        ax.set_title(pdg_name, fontsize=10, fontweight="normal")
         ax.set_xlabel("Initial inconsistency")
         ax.set_ylabel("Final inconsistency")
         ax.legend(fontsize=8)
