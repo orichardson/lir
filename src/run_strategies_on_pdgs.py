@@ -658,7 +658,7 @@ def _save_strategy_resolution_panel_pngs(
     pdgs: List[str],
     strategies,
     colors: Dict[str, str],
-    dpi: int = 300,
+    dpi: int = 600,
 ) -> None:
     """Write each dashboard panel from strategy_resolution_visualization as its own PNG."""
     n_pdgs = len(pdgs)
@@ -757,7 +757,7 @@ def visualize_results(results: List[Dict], output_dir: Optional[Path] = None):
 
     plt.tight_layout()
     strat_path = output_dir / "strategy_resolution_visualization.png"
-    plt.savefig(strat_path, dpi=300, bbox_inches="tight")
+    plt.savefig(strat_path, dpi=600, bbox_inches="tight")
     print(f"\n✓ Visualization saved to: {strat_path}")
     plt.close()
 
@@ -847,7 +847,7 @@ def visualize_initial_vs_final_inconsistency_bars(
 
     fig.tight_layout()
     p = output_dir / "fig_inconsistency_initial_vs_final_bars.png"
-    fig.savefig(p, dpi=300, bbox_inches="tight")
+    fig.savefig(p, dpi=600, bbox_inches="tight")
     plt.close(fig)
     print(f"✓ Saved {p}")
 
@@ -898,12 +898,12 @@ def visualize_theta_tv_through_lir(results: List[Dict], output_dir: Path) -> Non
                 color=c,
             )
         ax.set_xlabel("Refocus step")
-        ax.set_ylabel("Cumulative TV vs initial θ")
+        ax.set_ylabel("Cumulative TV distance from initial θ")
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
     fig.tight_layout()
     p = output_dir / "fig_tv_theta_lir_process.png"
-    fig.savefig(p, dpi=200, bbox_inches="tight")
+    fig.savefig(p, dpi=600, bbox_inches="tight")
     plt.close(fig)
     print(f"✓ Saved {p}")
 
@@ -959,7 +959,7 @@ def visualize_initial_vs_final_inconsistency_scatter(results: List[Dict], output
         ax.grid(True, alpha=0.3)
     fig.tight_layout()
     p = output_dir / "fig_inconsistency_initial_vs_final.png"
-    fig.savefig(p, dpi=200, bbox_inches="tight")
+    fig.savefig(p, dpi=600, bbox_inches="tight")
     plt.close(fig)
     print(f"✓ Saved {p}")
 
@@ -995,7 +995,7 @@ def visualize_distortion(results: List[Dict], output_dir: Optional[Path] = None)
     for bar in bars:
         height = bar.get_height()
         ax1.text(bar.get_x() + bar.get_width()/2., height,
-                f'{height:.4f}', ha='center', va='bottom', fontsize=11, fontweight='bold')
+                f'{height:.4f}', ha='center', va='bottom', fontsize=11, fontweight='normal')
     
     # Plot 2: Resolution vs Total Variation Distortion scatter
     # Drop extreme negative-resolution outliers to keep the main trend readable.
@@ -1029,7 +1029,7 @@ def visualize_distortion(results: List[Dict], output_dir: Optional[Path] = None)
     if ann_tv:
         tv_kw["annot"] = True
         tv_kw["fmt"] = ".4f"
-        tv_kw["annot_kws"] = {"fontsize": 8 if n_pdgs_d > 8 else 11, "fontweight": "bold"}
+        tv_kw["annot_kws"] = {"fontsize": 8 if n_pdgs_d > 8 else 11, "fontweight": "normal"}
     sns.heatmap(pivot_tv, **tv_kw)
     ax3.set_xlabel('PDG', fontsize=12, fontweight='normal')
     ax3.set_ylabel('Focus', fontsize=12, fontweight='normal')
@@ -1037,7 +1037,7 @@ def visualize_distortion(results: List[Dict], output_dir: Optional[Path] = None)
     
     plt.tight_layout()
     dist_path = output_dir / "distortion_analysis.png"
-    plt.savefig(dist_path, dpi=300, bbox_inches="tight")
+    plt.savefig(dist_path, dpi=600, bbox_inches="tight")
     print(f"✓ Distortion visualization saved to: {dist_path}")
     plt.close()
 

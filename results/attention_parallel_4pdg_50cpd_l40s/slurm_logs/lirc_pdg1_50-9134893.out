@@ -131,4 +131,95 @@ Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/cs
   [chain_5v_4e] rep 41/50 uniform... ✓ Res 99.8%
   [chain_5v_4e] rep 41/50 partial... ✓ Res 95.8%
   [chain_5v_4e] rep 41/50 hub... ✓ Res 99.9%
-  [chain_5v_4e] rep 42/50 uniform... 
+  [chain_5v_4e] rep 42/50 uniform... ✓ Res 100.0%
+  [chain_5v_4e] rep 42/50 partial... ✓ Res 91.6%
+  [chain_5v_4e] rep 42/50 hub... ✓ Res 100.0%
+  [chain_5v_4e] rep 43/50 uniform... ✓ Res 100.0%
+  [chain_5v_4e] rep 43/50 partial... ✓ Res 77.1%
+  [chain_5v_4e] rep 43/50 hub... ✓ Res 100.0%
+  [chain_5v_4e] rep 44/50 uniform... ✓ Res 100.0%
+  [chain_5v_4e] rep 44/50 partial... ✓ Res 70.2%
+  [chain_5v_4e] rep 44/50 hub... ✓ Res 100.0%
+  [chain_5v_4e] rep 45/50 uniform... ✓ Res 99.1%
+  [chain_5v_4e] rep 45/50 partial... ✓ Res 45.6%
+  [chain_5v_4e] rep 45/50 hub... ✓ Res 99.1%
+  [chain_5v_4e] rep 46/50 uniform... ✓ Res 100.0%
+  [chain_5v_4e] rep 46/50 partial... ✓ Res 20.8%
+  [chain_5v_4e] rep 46/50 hub... ✓ Res 100.0%
+  [chain_5v_4e] rep 47/50 uniform... ✓ Res 100.0%
+  [chain_5v_4e] rep 47/50 partial... ✓ Res 99.4%
+  [chain_5v_4e] rep 47/50 hub... ✓ Res 100.0%
+  [chain_5v_4e] rep 48/50 uniform... ✓ Res 99.5%
+  [chain_5v_4e] rep 48/50 partial... ✓ Res 82.3%
+  [chain_5v_4e] rep 48/50 hub... ✓ Res 99.5%
+  [chain_5v_4e] rep 49/50 uniform... ✓ Res 100.0%
+  [chain_5v_4e] rep 49/50 partial... ✓ Res 92.0%
+  [chain_5v_4e] rep 49/50 hub... ✓ Res 100.0%
+  [chain_5v_4e] rep 50/50 uniform... ✓ Res 99.0%
+  [chain_5v_4e] rep 50/50 partial... ✓ Res 95.7%
+  [chain_5v_4e] rep 50/50 hub... ✓ Res 99.1%
+
+Wrote results/attention_parallel_4pdg_50cpd_l40s/pdg1_chain_5v_4e/results_all_replicates.csv
+
+========================================================================================================================
+FOCUS RESOLUTION RESULTS WITH DISTORTION (TOTAL VARIATION)
+========================================================================================================================
+
+PDG             Focus           Initial      Final        Resolution %    Distortion (TV)
+========================================================================================================================
+(Many CPD replicates: showing means over replicates per PDG × strategy)
+
+chain_5v_4e     hub             0.168060     0.000529     99.27           0.315133       
+chain_5v_4e     partial         0.168060     0.047654     78.82           0.261873       
+chain_5v_4e     uniform         0.168060     0.000516     99.26           0.396746       
+
+========================================================================================================================
+SUMMARY BY FOCUS
+========================================================================================================================
+
+Focus           Avg Initial  Avg Final    Avg Res %    Avg Distortion (TV) 
+-----------------------------------------------------------------------
+hub             0.168060     0.000529     99.27        0.315133            
+partial         0.168060     0.047654     78.82        0.261873            
+uniform         0.168060     0.000516     99.26        0.396746            
+
+Skipping final visualizations for this shard (--skip-final-visualizations).
+
+========================================================================================================================
+EXPERIMENT COMPLETE
+========================================================================================================================
+
+======== GPU REPORT ========
+
+==============NVSMI LOG==============
+
+Timestamp                                 : Wed Apr  1 02:48:23 2026
+Driver Version                            : 580.95.05
+CUDA Version                              : 13.0
+
+Attached GPUs                             : 1
+GPU 00000000:61:00.0
+    Accounting Mode                       : Enabled
+    Accounting Mode Buffer Size           : 4000
+    Accounted Processes                   : None
+
+Wed Apr  1 02:48:23 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.95.05              Driver Version: 580.95.05      CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA L40S                    On  |   00000000:61:00.0 Off |                    0 |
+| N/A   26C    P8             34W /  325W |       0MiB /  46068MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
