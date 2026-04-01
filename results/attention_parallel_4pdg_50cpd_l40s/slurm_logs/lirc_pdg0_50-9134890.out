@@ -1,0 +1,86 @@
+========================================================================================================================
+RUNNING ATTENTION STRATEGIES ON ALL PDGs
+========================================================================================================================
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Processing chain_4v_3e (fixed structure; 50 CPD replicates)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [chain_4v_3e] rep 1/50 uniform... /network/scratch/s/samieima/projects/lir/src/run_strategies_on_pdgs.py:399: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  initial_inconsistency = float(torch_score(pdg_copy, mu_state, LIR_GAMMA))
+✓ Res 100.0%
+  [chain_4v_3e] rep 1/50 partial... ✓ Res 90.3%
+  [chain_4v_3e] rep 1/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 2/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 2/50 partial... ✓ Res 23.1%
+  [chain_4v_3e] rep 2/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 3/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 3/50 partial... ✓ Res 52.0%
+  [chain_4v_3e] rep 3/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 4/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 4/50 partial... ✓ Res 86.0%
+  [chain_4v_3e] rep 4/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 5/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 5/50 partial... ✓ Res 34.7%
+  [chain_4v_3e] rep 5/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 6/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 6/50 partial... ✓ Res 76.1%
+  [chain_4v_3e] rep 6/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 7/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 7/50 partial... ✓ Res 66.4%
+  [chain_4v_3e] rep 7/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 8/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 8/50 partial... ✓ Res 30.1%
+  [chain_4v_3e] rep 8/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 9/50 uniform... ✓ Res 99.1%
+  [chain_4v_3e] rep 9/50 partial... ✓ Res 58.2%
+  [chain_4v_3e] rep 9/50 hub... ✓ Res 99.3%
+  [chain_4v_3e] rep 10/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 10/50 partial... ✓ Res 77.8%
+  [chain_4v_3e] rep 10/50 hub... Traceback (most recent call last):
+  File "/network/scratch/s/samieima/projects/lir/src/run_strategies_on_pdgs.py", line 1377, in <module>
+  File "/network/scratch/s/samieima/projects/lir/src/run_strategies_on_pdgs.py", line 1308, in main
+    args=args,
+            ^^
+  File "/network/scratch/s/samieima/projects/lir/src/run_strategies_on_pdgs.py", line 132, in _write_json_checkpoint
+    _write_json_file_atomic(out_path, payload)
+  File "/network/scratch/s/samieima/projects/lir/src/run_strategies_on_pdgs.py", line 99, in _write_json_file_atomic
+    tmp_path.replace(path)
+  File "/home/mila/s/samieima/.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/pathlib.py", line 1188, in replace
+    os.replace(self, target)
+FileNotFoundError: [Errno 2] No such file or directory: 'results/attention_parallel_4pdg_50cpd_l40s/pdg0_chain_4v_3e/results_checkpoint.json.tmp' -> 'results/attention_parallel_4pdg_50cpd_l40s/pdg0_chain_4v_3e/results_checkpoint.json'
+
+======== GPU REPORT ========
+
+==============NVSMI LOG==============
+
+Timestamp                                 : Wed Apr  1 01:29:30 2026
+Driver Version                            : 580.95.05
+CUDA Version                              : 13.0
+
+Attached GPUs                             : 1
+GPU 00000000:61:00.0
+    Accounting Mode                       : Enabled
+    Accounting Mode Buffer Size           : 4000
+    Accounted Processes                   : None
+
+Wed Apr  1 01:29:30 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.95.05              Driver Version: 580.95.05      CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA L40S                    On  |   00000000:61:00.0 Off |                    0 |
+| N/A   26C    P8             34W /  325W |       0MiB /  46068MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+

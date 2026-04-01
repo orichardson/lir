@@ -1,0 +1,225 @@
+========================================================================================================================
+RUNNING ATTENTION STRATEGIES ON ALL PDGs
+========================================================================================================================
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Processing chain_4v_3e (fixed structure; 50 CPD replicates)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [chain_4v_3e] rep 1/50 uniform... /network/scratch/s/samieima/projects/lir/src/run_strategies_on_pdgs.py:399: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  initial_inconsistency = float(torch_score(pdg_copy, mu_state, LIR_GAMMA))
+✓ Res 100.0%
+  [chain_4v_3e] rep 1/50 partial... ✓ Res 90.3%
+  [chain_4v_3e] rep 1/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 2/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 2/50 partial... ✓ Res 23.1%
+  [chain_4v_3e] rep 2/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 3/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 3/50 partial... ✓ Res 52.0%
+  [chain_4v_3e] rep 3/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 4/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 4/50 partial... ✓ Res 86.0%
+  [chain_4v_3e] rep 4/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 5/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 5/50 partial... ✓ Res 34.7%
+  [chain_4v_3e] rep 5/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 6/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 6/50 partial... ✓ Res 76.1%
+  [chain_4v_3e] rep 6/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 7/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 7/50 partial... ✓ Res 66.4%
+  [chain_4v_3e] rep 7/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 8/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 8/50 partial... ✓ Res 30.1%
+  [chain_4v_3e] rep 8/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 9/50 uniform... ✓ Res 99.1%
+  [chain_4v_3e] rep 9/50 partial... ✓ Res 58.2%
+  [chain_4v_3e] rep 9/50 hub... ✓ Res 99.3%
+  [chain_4v_3e] rep 10/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 10/50 partial... ✓ Res 77.8%
+  [chain_4v_3e] rep 10/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 11/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 11/50 partial... ✓ Res 63.7%
+  [chain_4v_3e] rep 11/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 12/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 12/50 partial... ✓ Res 71.9%
+  [chain_4v_3e] rep 12/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 13/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 13/50 partial... ✓ Res 41.5%
+  [chain_4v_3e] rep 13/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 14/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 14/50 partial... ✓ Res 71.0%
+  [chain_4v_3e] rep 14/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 15/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 15/50 partial... ✓ Res 42.3%
+  [chain_4v_3e] rep 15/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 16/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 16/50 partial... ✓ Res 82.2%
+  [chain_4v_3e] rep 16/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 17/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 17/50 partial... ✓ Res 70.3%
+  [chain_4v_3e] rep 17/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 18/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 18/50 partial... ✓ Res 97.5%
+  [chain_4v_3e] rep 18/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 19/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 19/50 partial... ✓ Res 37.3%
+  [chain_4v_3e] rep 19/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 20/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 20/50 partial... ✓ Res 45.6%
+  [chain_4v_3e] rep 20/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 21/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 21/50 partial... ✓ Res 33.6%
+  [chain_4v_3e] rep 21/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 22/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 22/50 partial... ✓ Res 52.4%
+  [chain_4v_3e] rep 22/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 23/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 23/50 partial... ✓ Res 64.5%
+  [chain_4v_3e] rep 23/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 24/50 uniform... ✓ Res 99.9%
+  [chain_4v_3e] rep 24/50 partial... ✓ Res 93.0%
+  [chain_4v_3e] rep 24/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 25/50 uniform... ✓ Res 99.6%
+  [chain_4v_3e] rep 25/50 partial... ✓ Res -68.1%
+  [chain_4v_3e] rep 25/50 hub... ✓ Res 99.4%
+  [chain_4v_3e] rep 26/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 26/50 partial... ✓ Res 46.0%
+  [chain_4v_3e] rep 26/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 27/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 27/50 partial... ✓ Res 74.0%
+  [chain_4v_3e] rep 27/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 28/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 28/50 partial... ✓ Res 29.5%
+  [chain_4v_3e] rep 28/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 29/50 uniform... ✓ Res 99.9%
+  [chain_4v_3e] rep 29/50 partial... ✓ Res 60.3%
+  [chain_4v_3e] rep 29/50 hub... ✓ Res 99.6%
+  [chain_4v_3e] rep 30/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 30/50 partial... ✓ Res 40.2%
+  [chain_4v_3e] rep 30/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 31/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 31/50 partial... ✓ Res 43.3%
+  [chain_4v_3e] rep 31/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 32/50 uniform... ✓ Res 99.6%
+  [chain_4v_3e] rep 32/50 partial... ✓ Res 57.5%
+  [chain_4v_3e] rep 32/50 hub... ✓ Res 99.7%
+  [chain_4v_3e] rep 33/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 33/50 partial... ✓ Res 76.9%
+  [chain_4v_3e] rep 33/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 34/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 34/50 partial... ✓ Res 38.1%
+  [chain_4v_3e] rep 34/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 35/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 35/50 partial... ✓ Res 56.1%
+  [chain_4v_3e] rep 35/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 36/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 36/50 partial... ✓ Res 36.2%
+  [chain_4v_3e] rep 36/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 37/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 37/50 partial... ✓ Res 26.4%
+  [chain_4v_3e] rep 37/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 38/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 38/50 partial... ✓ Res 41.7%
+  [chain_4v_3e] rep 38/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 39/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 39/50 partial... ✓ Res 79.5%
+  [chain_4v_3e] rep 39/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 40/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 40/50 partial... ✓ Res 60.5%
+  [chain_4v_3e] rep 40/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 41/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 41/50 partial... ✓ Res 88.2%
+  [chain_4v_3e] rep 41/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 42/50 uniform... ✓ Res 99.6%
+  [chain_4v_3e] rep 42/50 partial... ✓ Res 64.9%
+  [chain_4v_3e] rep 42/50 hub... ✓ Res 99.9%
+  [chain_4v_3e] rep 43/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 43/50 partial... ✓ Res 75.0%
+  [chain_4v_3e] rep 43/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 44/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 44/50 partial... ✓ Res 67.1%
+  [chain_4v_3e] rep 44/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 45/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 45/50 partial... ✓ Res 35.0%
+  [chain_4v_3e] rep 45/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 46/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 46/50 partial... ✓ Res 35.5%
+  [chain_4v_3e] rep 46/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 47/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 47/50 partial... ✓ Res 55.5%
+  [chain_4v_3e] rep 47/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 48/50 uniform... ✓ Res 99.9%
+  [chain_4v_3e] rep 48/50 partial... ✓ Res 46.6%
+  [chain_4v_3e] rep 48/50 hub... ✓ Res 99.9%
+  [chain_4v_3e] rep 49/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 49/50 partial... ✓ Res 48.8%
+  [chain_4v_3e] rep 49/50 hub... ✓ Res 100.0%
+  [chain_4v_3e] rep 50/50 uniform... ✓ Res 100.0%
+  [chain_4v_3e] rep 50/50 partial... ✓ Res 58.9%
+  [chain_4v_3e] rep 50/50 hub... ✓ Res 100.0%
+
+Wrote results/attention_parallel_4pdg_50cpd_l40s/pdg0_chain_4v_3e/results_all_replicates.csv
+
+========================================================================================================================
+FOCUS RESOLUTION RESULTS WITH DISTORTION (TOTAL VARIATION)
+========================================================================================================================
+
+PDG             Focus           Initial      Final        Resolution %    Distortion (TV)
+========================================================================================================================
+(Many CPD replicates: showing means over replicates per PDG × strategy)
+
+chain_4v_3e     hub             0.159294     0.000058     99.95           0.214554       
+chain_4v_3e     partial         0.159294     0.086750     54.70           0.110045       
+chain_4v_3e     uniform         0.159294     0.000065     99.95           0.222544       
+
+========================================================================================================================
+SUMMARY BY FOCUS
+========================================================================================================================
+
+Focus           Avg Initial  Avg Final    Avg Res %    Avg Distortion (TV) 
+-----------------------------------------------------------------------
+hub             0.159294     0.000058     99.95        0.214554            
+partial         0.159294     0.086750     54.70        0.110045            
+uniform         0.159294     0.000065     99.95        0.222544            
+
+Skipping final visualizations for this shard (--skip-final-visualizations).
+
+========================================================================================================================
+EXPERIMENT COMPLETE
+========================================================================================================================
+
+======== GPU REPORT ========
+
+==============NVSMI LOG==============
+
+Timestamp                                 : Tue Mar 31 23:28:15 2026
+Driver Version                            : 580.95.05
+CUDA Version                              : 13.0
+
+Attached GPUs                             : 1
+GPU 00000000:4A:00.0
+    Accounting Mode                       : Enabled
+    Accounting Mode Buffer Size           : 4000
+    Accounted Processes                   : None
+
+Tue Mar 31 23:28:15 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.95.05              Driver Version: 580.95.05      CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA L40S                    On  |   00000000:4A:00.0 Off |                    0 |
+| N/A   26C    P8             34W /  325W |       0MiB /  46068MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
