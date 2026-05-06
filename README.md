@@ -2,7 +2,7 @@ This repo contains code and writing for the LIR project.
 
 # Quickstart
 
-### 🎯 Quick Start for Experiments
+### Quick Start for Experiments
 
 1. **Setup Environment:**
    ```bash
@@ -42,7 +42,7 @@ This repo contains code and writing for the LIR project.
 - **Global**: 78.0% average resolution
 - **Local**: 43.8% average resolution (struggles on small PDGs)
 
-### 📁 Experiment Files
+### Experiment Files
 
 **Core Scripts:**
 - `src/run_strategies_on_pdgs.py` - Main experiment runner
@@ -105,7 +105,7 @@ The node `pdg/` in this repository is actually [git submodule](https://git-scm.c
   To update both this repo and the submodlue, `git pull --recurse-submodules`.
 * To push your work on the submodule, commit and push as usual from within the submodule `pdg`. If the change touches anything important and has the possibility of breaking things, do this on a new branch and open a pull request for review. Finally: from this outer repository, run `git add pdg` and commit/push as usual.
 
-***Detached HEAD?***
+***Detached HEAD***
 Submodules have many conceptual and practical benefits. The drawback: git configuration issues can get nastier.
 The most common problem is that is easy to get the submodule into a state that refers to a specific commit but does not track a branch. This situation is called a detached HEAD, and can happen whenever pulling a change that includes a new submodule pointer. The danger is that commits to a detached HEAD can easily be lost.
 
