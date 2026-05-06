@@ -1,0 +1,49 @@
+========================================================================================================================
+RUNNING ATTENTION STRATEGIES ON ALL PDGs
+========================================================================================================================
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Processing chain_7v_6e (fixed structure; 50 CPD replicates)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [chain_7v_6e] rep 1/50 uniform... /network/scratch/s/samieima/projects/lir/src/run_strategies_on_pdgs.py:400: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  initial_inconsistency = float(torch_score(pdg_copy, mu_state, LIR_GAMMA))
+✓ Res 76.6%
+  [chain_7v_6e] rep 1/50 partial... ✓ Res 86.2%
+  [chain_7v_6e] rep 1/50 hub... ✓ Res 76.9%
+  [chain_7v_6e] rep 2/50 uniform... ✓ Res 99.7%
+  [chain_7v_6e] rep 2/50 partial... ✓ Res 30.6%
+  [chain_7v_6e] rep 2/50 hub... ✓ Res 99.2%
+  [chain_7v_6e] rep 3/50 uniform... ✓ Res 100.0%
+  [chain_7v_6e] rep 3/50 partial... ✓ Res 72.4%
+  [chain_7v_6e] rep 3/50 hub... ✓ Res 100.0%
+  [chain_7v_6e] rep 4/50 uniform... ✓ Res 99.9%
+  [chain_7v_6e] rep 4/50 partial... ✓ Res 78.7%
+  [chain_7v_6e] rep 4/50 hub... ✓ Res 99.9%
+  [chain_7v_6e] rep 5/50 uniform... ✓ Res 94.1%
+  [chain_7v_6e] rep 5/50 partial... ✓ Res 95.6%
+  [chain_7v_6e] rep 5/50 hub... ✓ Res 96.4%
+  [chain_7v_6e] rep 6/50 uniform... ✓ Res 96.8%
+  [chain_7v_6e] rep 6/50 partial... ✓ Res 73.5%
+  [chain_7v_6e] rep 6/50 hub... ✓ Res 99.9%
+  [chain_7v_6e] rep 7/50 uniform... ✓ Res 99.9%
+  [chain_7v_6e] rep 7/50 partial... ✓ Res 89.0%
+  [chain_7v_6e] rep 7/50 hub... ✓ Res 99.8%
+  [chain_7v_6e] rep 8/50 uniform... ✓ Res 99.9%
+  [chain_7v_6e] rep 8/50 partial... ✓ Res 60.7%
+  [chain_7v_6e] rep 8/50 hub... ✓ Res 99.9%
+  [chain_7v_6e] rep 9/50 uniform... ✓ Res 100.0%
+  [chain_7v_6e] rep 9/50 partial... ✓ Res 58.6%
+  [chain_7v_6e] rep 9/50 hub... ✓ Res 100.0%
+  [chain_7v_6e] rep 10/50 uniform... ✓ Res 100.0%
+  [chain_7v_6e] rep 10/50 partial... ✓ Res 88.2%
+  [chain_7v_6e] rep 10/50 hub... ✓ Res 100.0%
+  [chain_7v_6e] rep 11/50 uniform... ✓ Res 100.0%
+  [chain_7v_6e] rep 11/50 partial... ✓ Res 77.1%
+  [chain_7v_6e] rep 11/50 hub... ✓ Res 99.8%
+  [chain_7v_6e] rep 12/50 uniform... ✓ Res 99.9%
+  [chain_7v_6e] rep 12/50 partial... ✓ Res 68.5%
+  [chain_7v_6e] rep 12/50 hub... ✓ Res 99.8%
+  [chain_7v_6e] rep 13/50 uniform... ✓ Res 91.4%
+  [chain_7v_6e] rep 13/50 partial... ✓ Res 99.0%
+  [chain_7v_6e] rep 13/50 hub... 
