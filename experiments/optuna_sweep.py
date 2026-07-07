@@ -45,7 +45,7 @@ TB_ALGORITHMS = ("TBGFlowNet", "ModifiedTBGFlowNet")
 REPO_DIR = Path(__file__).resolve().parents[1]
 OPTUNA_DIR = REPO_DIR / "experiments" / "optuna_results"
 
-# Fixed training hyperparameters (same as grid sweep).
+# Fixed training hyperparameters.
 FIXED_ARGS = [
     "--height", "24",
     "--ndim", "4",

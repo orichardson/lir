@@ -25,6 +25,12 @@ if [[ "${1:-}" == "--dry-run" ]]; then
     DRY_RUN=true
 fi
 
+# --- Cluster config (edit for your environment) ---
+PARTITION="long"
+TIME="48:00:00"
+# MAIL_USER="you@example.com"
+
+# --- Experiment grid ---
 ALGORITHMS=(
     "TBGFlowNet"
     "ModifiedTBGFlowNet"
@@ -54,13 +60,13 @@ for algo in "${ALGORITHMS[@]}"; do
         --job-name="$job_name"
         --output="experiments/logs/%x_%j.log"
         --error="experiments/logs/%x_%j.err"
-        --time=48:00:00
+        --time="$TIME"
         --gres=gpu:1
         --cpus-per-task=2
         --mem=16G
-        --partition=long
+        --partition="$PARTITION"
         --mail-type=FAIL
-        --mail-user=joseph@viviano.ca
+        ${MAIL_USER:+--mail-user="$MAIL_USER"}
         experiments/run_optuna.sh
         search
         --algo "$algo"
