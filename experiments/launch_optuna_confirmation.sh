@@ -76,7 +76,7 @@ for algo in "${ALGORITHMS[@]}"; do
             --job-name="$job_name"
             --output="experiments/logs/%x_%j.log"
             --error="experiments/logs/%x_%j.err"
-            --time=18:00:00
+            --time=12:00:00
             --gres=gpu:1
             --cpus-per-task=2
             --mem=16G
